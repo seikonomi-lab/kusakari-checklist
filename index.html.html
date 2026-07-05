@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>東山口幹線 草刈チェックリスト</title>
+<style>
+  html, body{margin:0; padding:0; background:#E9EEE2;}
+
+  :root{
+    --bg:#E9EEE2;
+    --bg-card:#F7F9F2;
+    --ink:#22302A;
+    --ink-soft:#5B6A61;
+    --line:#C9D2BE;
+    --pending:#B9822A;
+    --pending-bg:#F5E8CC;
+    --done:#2F6B52;
+    --done-bg:#DCEBE1;
+    --rust:#9C4E2E;
+    --rust-bg:#EEDBCC;
+    --blocked:#A63B2E;
+    --blocked-bg:#F1DAD3;
+  }
+  *{box-sizing:border-box;}
+  #app{
+    font-family:'IBM Plex Sans JP','IBM Plex Sans',sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    min-height:100%;
+    padding-bottom:40px;
+  }
+  #loading{padding:40px 20px; text-align:center; color:var(--ink-soft); font-size:13px;}
+
+  header.top{
+    position:sticky; top:0; z-index:20;
+    background:var(--bg);
+    padding:14px 14px 10px;
+    border-bottom:2px solid var(--ink);
+  }
+  .line-name{font-size:12px; color:var(--rust); font-weight:700; letter-spacing:.08em;}
+  .map-link{
+    display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700;
+    color:var(--bg-card); background:var(--ink); border-radius:12px; padding:4px 10px;
+    text-decoration:none; float:right; margin-top:-2px;
+  }
+  h1{
+    font-family:'Oswald',sans-serif; font-weight:700; font-size:20px; margin:2px 0 0;
+    letter-spacing:.01em;
+  }
+  .sub{font-size:11px; color:var(--ink-soft); margin-top:2px; line-height:1.6;}
+  .sub .warn-chip{color:var(--blocked); font-weight:700;}
+
+  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:12px;}
+  .stat{
+    background:var(--bg-card); border:1px solid var(--line); border-radius:4px;
+    padding:7px 6px 8px; text-align:center;
+  }
+  .stat .lbl{font-size:9.5px; color:var(--ink-soft); letter-spacing:.04em;}
+  .stat .val{font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600; margin-top:2px;}
+  .stat .pct{font-size:10px; color:var(--done); font-weight:600;}
+  .stat .bar{height:4px; background:var(--line); border-radius:2px; margin-top:5px; overflow:hidden;}
+  .stat .bar > div{height:100%; background:var(--done);}
+
+  .rail-wrap{margin-top:10px;}
+  .rail-lbl{font-size:9.5px; color:var(--ink-soft); letter-spacing:.05em; margin-bottom:4px;}
+  .rail{display:flex; align-items:center; overflow-x:auto; padding:6px 2px 8px; -webkit-overflow-scrolling:touch;}
+  .rail::-webkit-scrollbar{height:3px;}
+  .rail-edge{width:10px; height:2px; background:var(--line); flex:0 0 auto;}
+  .rail-edge.done{background:var(--done);}
+  .rail-edge.blocked{background:var(--blocked);}
+  .rail-edge.na{background:transparent; border-top:1px dashed var(--ink-soft);}
+  .rail-node{
+    width:9px; height:9px; border-radius:50%; flex:0 0 auto;
+    background:var(--pending); border:1.5px solid var(--bg);
+    box-shadow:0 0 0 1px var(--ink-soft); cursor:pointer;
+  }
+  .rail-node.done{background:var(--done); box-shadow:0 0 0 1px var(--done);}
+  .rail-node.blocked{background:var(--blocked); box-shadow:0 0 0 1px var(--blocked);}
+
+  .controls{display:flex; gap:6px; margin-top:10px; align-items:center; flex-wrap:wrap;}
+  .seg-filter{display:flex; flex-wrap:wrap; background:var(--bg-card); border:1px solid var(--line); border-radius:4px; overflow:hidden;}
+  .seg-filter button{
+    border:none; background:transparent; color:var(--ink-soft); font-size:11.5px;
+    padding:6px 10px; font-weight:600; cursor:pointer; font-family:inherit;
+  }
+  .seg-filter button.active{background:var(--ink); color:var(--bg-card);}
+  .jump{flex:1; display:flex;}
+  .jump input{
+    width:100%; border:1px solid var(--line); border-radius:4px; padding:6px 8px;
+    font-size:12.5px; font-family:'IBM Plex Mono',monospace; background:var(--bg-card); color:var(--ink);
+  }
+  .jump input::placeholder{color:var(--ink-soft); opacity:.8;}
+
+  main{padding:6px 12px 0;}
+  .connector{width:34px; display:flex; flex-direction:column; align-items:center; flex:0 0 auto;}
+  .connector .dot{width:8px; height:8px; border-radius:50%; background:var(--ink-soft);}
+  .connector .stem{width:2px; flex:1; background:var(--line);}
+
+  .seg-row{display:flex; align-items:center; min-height:34px;}
+  .seg-row.hide{display:none;}
+  .seg-check{
+    width:20px; height:20px; border-radius:4px; border:2px solid var(--pending);
+    flex:0 0 auto; margin-right:10px; cursor:pointer; position:relative;
+  }
+  .seg-check.done{background:var(--done); border-color:var(--done);}
+  .seg-check.done::after{
+    content:''; position:absolute; left:5px; top:1px; width:5px; height:9px;
+    border:solid var(--bg-card); border-width:0 2px 2px 0; transform:rotate(40deg);
+  }
+  .seg-check.blocked{background:var(--blocked); border-color:var(--blocked);}
+  .seg-check.blocked::after{
+    content:'!'; position:absolute; left:6px; top:-1px; color:var(--bg-card); font-size:13px; font-weight:700;
+  }
+  .hazard-btn{
+    flex:0 0 auto; width:22px; height:22px; border-radius:50%; border:1.5px dashed var(--blocked);
+    color:var(--blocked); background:transparent; font-size:12px; line-height:1;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; margin-left:6px;
+  }
+  .hazard-btn.active{background:var(--blocked); color:var(--bg-card); border-style:solid;}
+  .blocked-reason{display:block; font-size:10.5px; color:var(--blocked); font-weight:600; margin-top:2px;}
+  .seg-info{font-size:11.5px; color:var(--ink-soft); line-height:1.4;}
+  .seg-info b{font-family:'IBM Plex Mono',monospace; color:var(--ink); font-weight:600;}
+  .seg-note{
+    display:inline-block; font-size:9.5px; font-weight:600; padding:1px 6px;
+    border-radius:8px; background:var(--rust-bg); color:var(--rust); margin-left:6px;
+  }
+
+  .tower-row{margin:6px 0;}
+  .tower-row.hide{display:none;}
+  .tower-card{
+    background:var(--bg-card); border:1px solid var(--line); border-radius:6px;
+    padding:10px 12px; display:flex; align-items:center; gap:10px; flex:1; flex-wrap:wrap;
+    transition:background .15s, border-color .15s;
+  }
+  .tower-card.done{border-color:var(--done); background:var(--done-bg);}
+  .tower-card.blocked{border-color:var(--blocked); background:var(--blocked-bg);}
+  .tower-check{
+    width:30px; height:30px; border-radius:50%; border:2.5px solid var(--pending);
+    flex:0 0 auto; cursor:pointer; position:relative; background:var(--bg-card);
+  }
+  .tower-check.done{background:var(--done); border-color:var(--done);}
+  .tower-check.done::after{
+    content:''; position:absolute; left:9px; top:5px; width:6px; height:12px;
+    border:solid var(--bg-card); border-width:0 3px 3px 0; transform:rotate(40deg);
+  }
+  .tower-check.blocked{background:var(--blocked); border-color:var(--blocked);}
+  .tower-check.blocked::after{
+    content:'!'; position:absolute; left:12px; top:2px; color:var(--bg-card); font-size:18px; font-weight:700;
+  }
+  .tower-body{flex:1; min-width:0;}
+  .tower-top{display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;}
+  .tower-no{font-family:'Oswald',sans-serif; font-size:16px; font-weight:700;}
+  .tower-area{font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink-soft);}
+  .tower-area b{color:var(--ink); font-weight:600;}
+  .tower-note{font-size:9.5px; font-weight:600; padding:1px 6px; border-radius:8px; background:var(--pending-bg); color:var(--pending);}
+  .field-note{display:block; font-size:10.5px; color:var(--ink-soft); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .field-note.danger{color:var(--blocked); font-weight:700;}
+  .nav-btn{
+    flex:0 0 auto; font-size:10px; font-weight:700; color:var(--ink); background:var(--bg-card);
+    border:1px solid var(--ink-soft); border-radius:12px; padding:5px 9px; text-decoration:none;
+    white-space:nowrap;
+  }
+  .seg-nav{flex:0 0 auto; font-size:9.5px; color:var(--ink-soft); text-decoration:none; border:1px solid var(--line); border-radius:10px; padding:2px 7px; margin-left:4px;}
+
+  .report-panel{margin:18px 12px 0; padding:14px; background:var(--blocked-bg); border:1px solid var(--blocked); border-radius:6px;}
+  .report-title{font-family:'Oswald',sans-serif; font-weight:700; font-size:14px; color:var(--blocked); letter-spacing:.02em;}
+  .report-desc{font-size:11.5px; color:var(--ink); line-height:1.6; margin-top:6px;}
+  .report-desc b{color:var(--blocked);}
+  .report-btns{display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;}
+  .report-btn{
+    border:1px solid var(--blocked); background:var(--bg-card); color:var(--blocked);
+    border-radius:4px; padding:8px 12px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit;
+  }
+  .report-btn.primary{background:var(--blocked); color:var(--bg-card);}
+  .report-note{font-size:10px; color:var(--ink-soft); margin-top:8px; line-height:1.5;}
+
+  .footnote{
+    margin:18px 12px 0; padding:12px; background:var(--bg-card); border:1px solid var(--line);
+    border-radius:6px; font-size:11px; color:var(--ink-soft); line-height:1.6;
+  }
+  .footnote b{color:var(--ink);}
+
+  .bottom-bar{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px; margin:14px 12px 0; font-size:11px; color:var(--ink-soft);}
+  .reset-btn{
+    background:none; border:1px solid var(--rust); color:var(--rust); border-radius:4px;
+    padding:6px 10px; font-size:11px; font-weight:600; cursor:pointer; font-family:inherit;
+  }
+</style>
+</head>
+<body>
+<div id="app"><div id="loading">読み込み中…</div></div>
+
+<script>
+(function(){
+
+  // ============================================================
+  // データ（施工数量表／東山口幹線 より）
+  // towers[i] は segments[i]（直前の巡視路区間）の先にある鉄塔
+  // ============================================================
+  const towers = [
+    {no:1, area:864, note:null},
+    {no:2, area:787, note:'太陽光連絡'},
+    {no:3, area:869, note:'太陽光連絡'},
+    {no:4, area:676, note:'太陽光連絡'},
+    {no:5, area:824, note:'太陽光連絡'},
+    {no:6, area:547, note:null},
+    {no:7, area:952, note:null},
+    {no:8, area:779, note:null},
+    {no:9, area:830, note:null},
+    {no:10, area:1131, note:null},
+    {no:11, area:974, note:null},
+    {no:12, area:2164, note:'敷地法面草刈'},
+    {no:126, area:975, note:null},{no:127, area:828, note:null},{no:128, area:787, note:null},
+    {no:129, area:748, note:null},{no:130, area:827, note:null},{no:131, area:655, note:null},
+    {no:132, area:930, note:null},{no:133, area:853, note:null},{no:134, area:824, note:null},
+    {no:135, area:825, note:null},{no:136, area:687, note:null},{no:137, area:673, note:null},
+    {no:138, area:730, note:null},{no:139, area:754, note:null},{no:140, area:828, note:null},
+    {no:141, area:729, note:null},{no:142, area:931, note:null},{no:143, area:712, note:null},
+    {no:144, area:717, note:null},{no:145, area:802, note:null},{no:146, area:828, note:null},
+    {no:147, area:746, note:null},{no:148, area:989, note:null},{no:149, area:899, note:null},
+    {no:150, area:646, note:null},{no:151, area:694, note:null},{no:152, area:663, note:null},
+    {no:153, area:618, note:null},{no:154, area:675, note:null},{no:155, area:806, note:null},
+    {no:156, area:766, note:null},{no:157, area:768, note:null},
+    {no:158, area:1092, note:null},{no:159, area:910, note:null},{no:160, area:910, note:null},
+    {no:161, area:800, note:null},{no:162, area:677, note:null},{no:163, area:962, note:null},
+    {no:164, area:840, note:null},{no:165, area:675, note:null},{no:166, area:827, note:null},
+    {no:167, area:674, note:null},{no:168, area:827, note:null},{no:169, area:713, note:null},
+    {no:170, area:893, note:null},
+  ];
+
+  const segments = [
+    {dist:100, dense:100, sparse:0, note:null},
+    {dist:null, dense:0, sparse:0, note:'太陽光連絡', excluded:true},
+    {dist:50, dense:50, sparse:0, note:'太陽光連絡'},
+    {dist:150, dense:150, sparse:0, note:'太陽光連絡'},
+    {dist:700, dense:470, sparse:230, note:'太陽光連絡'},
+    {dist:940, dense:630, sparse:310, note:'太陽光連絡'},
+    {dist:620, dense:420, sparse:200, note:null},
+    {dist:460, dense:310, sparse:150, note:null},
+    {dist:90, dense:90, sparse:0, note:'入口舗装道路含む'},
+    {dist:370, dense:250, sparse:120, note:null},
+    {dist:440, dense:300, sparse:140, note:null},
+    {dist:290, dense:200, sparse:90, note:null},
+    {dist:3616, dense:606, sparse:3010, note:'林道溝掃除・車両通行禁止', clean:2606},
+    {dist:600, dense:400, sparse:200, note:null},{dist:480, dense:320, sparse:160, note:null},
+    {dist:390, dense:260, sparse:130, note:null},{dist:290, dense:190, sparse:100, note:null},
+    {dist:430, dense:290, sparse:140, note:null},{dist:740, dense:500, sparse:240, note:null},
+    {dist:1040, dense:700, sparse:340, note:null},{dist:900, dense:600, sparse:300, note:null},
+    {dist:720, dense:480, sparse:240, note:null},{dist:550, dense:370, sparse:180, note:null},
+    {dist:580, dense:390, sparse:190, note:null},{dist:630, dense:420, sparse:210, note:null},
+    {dist:500, dense:340, sparse:160, note:null},{dist:410, dense:280, sparse:130, note:null},
+    {dist:320, dense:220, sparse:100, note:null},{dist:900, dense:600, sparse:300, note:null},
+    {dist:460, dense:310, sparse:150, note:null},{dist:880, dense:590, sparse:290, note:null},
+    {dist:900, dense:600, sparse:300, note:null},{dist:590, dense:400, sparse:190, note:null},
+    {dist:770, dense:670, sparse:100, note:null},{dist:640, dense:430, sparse:210, note:null},
+    {dist:620, dense:420, sparse:200, note:null},{dist:560, dense:380, sparse:180, note:null},
+    {dist:500, dense:340, sparse:160, note:null},{dist:620, dense:420, sparse:200, note:null},
+    {dist:940, dense:630, sparse:310, note:null},{dist:420, dense:280, sparse:140, note:null},
+    {dist:460, dense:310, sparse:150, note:null},{dist:440, dense:300, sparse:140, note:null},
+    {dist:480, dense:320, sparse:160, note:null},
+    {dist:430, dense:290, sparse:140, note:null},{dist:480, dense:360, sparse:120, note:null},
+    {dist:720, dense:480, sparse:240, note:null},{dist:750, dense:550, sparse:200, note:null},
+    {dist:380, dense:260, sparse:120, note:null},{dist:780, dense:520, sparse:260, note:null},
+    {dist:530, dense:360, sparse:170, note:null},{dist:540, dense:360, sparse:180, note:null},
+    {dist:650, dense:440, sparse:210, note:null},{dist:660, dense:440, sparse:220, note:null},
+    {dist:740, dense:500, sparse:240, note:null},{dist:670, dense:450, sparse:220, note:null},
+    {dist:460, dense:310, sparse:150, note:null},
+  ];
+
+  const TOTAL_TOWER_AREA = towers.reduce((s,t)=>s+t.area,0);
+  const TOTAL_DIST = segments.reduce((s,g)=>s+(g.dist||0),0);
+  const N = towers.length;
+  const SEG_TOTAL = segments.filter(s=>!s.excluded).length;
+  const MAP_URL = 'https://www.google.com/maps/d/u/0/edit?mid=18e7oawl-TWoOfO8-eiQcOrRw46A&usp=sharing';
+
+  // 現場地図（KMZ）から取得した各鉄塔の座標と現地メモ
+  const TOWER_GEO = {
+    1:{lat:34.4134409,lon:132.2565186,note:'変電所横　やや大草'},
+    2:{lat:34.4152299,lon:132.2546357,note:'大草'},
+    3:{lat:34.4178851,lon:132.2507465,note:'車横付け可能　草低し'},
+    4:{lat:34.4192028,lon:132.2500733,note:'入口舗装　やや大草'},
+    5:{lat:34.4234188,lon:132.2478363,note:'やや大草'},
+    6:{lat:34.4284676,lon:132.2461398,note:'敷地狭め　大草'},
+    7:{lat:34.4320007,lon:132.2437218,note:'なだらか　草多い'},
+    8:{lat:34.4345713,lon:132.2408921,note:'笹多し'},
+    9:{lat:34.43584,lon:132.2395147,note:'笹多し'},
+    10:{lat:34.4387722,lon:132.2376586,note:'広い　赤鉄塔　大草'},
+    11:{lat:34.4416888,lon:132.2358455,note:'大草'},
+    12:{lat:34.4453352,lon:132.2354458,note:'中央部草少なし　全体的に大草'},
+    126:{lat:34.4444449,lon:132.2282602,note:'なだらか　中央草なし　草低め'},
+    127:{lat:34.4440811,lon:132.2234617,note:'大草'},
+    128:{lat:34.4438621,lon:132.2205542,note:'急傾斜箇所　見放し良し　大草'},
+    129:{lat:34.4436918,lon:132.2182649,note:'カヤ多し　草低め'},
+    130:{lat:34.4434971,lon:132.2158268,note:'超大草　入口階段長し'},
+    131:{lat:34.4417751,lon:132.2121871,note:'一部急箇所有り　草低め'},
+    132:{lat:34.4398152,lon:132.2074503,note:'やや大草'},
+    133:{lat:34.4382811,lon:132.2016191,note:'単独箇所　なだらか　大草'},
+    134:{lat:34.4376495,lon:132.1954662,note:'やや大草　一部急傾斜箇所有り'},
+    135:{lat:34.4368841,lon:132.1908675,note:'やや大草'},
+    136:{lat:34.436184,lon:132.1865934,note:'西島根19号隣　やや大草'},
+    137:{lat:34.4356321,lon:132.1822791,note:'笹多し'},
+    138:{lat:34.4350392,lon:132.177781,note:'なだらか　大草'},
+    139:{lat:34.4345691,lon:132.1740715,note:'中央階段石積有り　やや大草'},
+    140:{lat:34.4341897,lon:132.1715489,note:'全体的にやや急　やや大草'},
+    141:{lat:34.4338402,lon:132.1688962,note:'巡視路横断・露出石多い'},
+    142:{lat:34.4330105,lon:132.1626586,note:'笹多し　草少なめ'},
+    143:{lat:34.4322982,lon:132.1588714,note:'登り急　鉄板有り　草低め'},
+    144:{lat:34.4313879,lon:132.15414,note:'石多い・土露出'},
+    145:{lat:34.4296457,lon:132.1492195,note:'敷地内巡視路長い・低草'},
+    146:{lat:34.4282563,lon:132.1452069,note:'松成長　一部草なし'},
+    147:{lat:34.4262685,lon:132.1393155,note:'入口行き戻り・猪荒し'},
+    148:{lat:34.4244565,lon:132.1332523,note:'平坦・中央水路・重機道近い'},
+    149:{lat:34.4226876,lon:132.1273273,note:'草低め　急傾斜箇所有り'},
+    150:{lat:34.4212085,lon:132.1230667,note:'支柱低い・鉄板有り'},
+    151:{lat:34.4196995,lon:132.1186316,note:'木柵有り　1基単独　草低め'},
+    152:{lat:34.4179094,lon:132.1148202,note:'1基単独・一部急傾斜'},
+    153:{lat:34.4153892,lon:132.1094584,note:'鉄板・丘越え横断・低草'},
+    154:{lat:34.4140793,lon:132.1074414,note:'急傾斜・巡視路横断・大草'},
+    155:{lat:34.4128313,lon:132.1054351,note:'一部急傾斜箇所有り　草低め'},
+    156:{lat:34.4115833,lon:132.1034718,note:'やや急・木柵一部'},
+    157:{lat:34.4103297,lon:132.101389,note:'急傾斜・木柵・巡視路横断'},
+    158:{lat:34.4083779,lon:132.0995759,note:'法枠　非常に危険　広い　大草'},
+    159:{lat:34.4062059,lon:132.0980551,note:'鉄板・やや急'},
+    160:{lat:34.40282,lon:132.0929897,note:'巡視路急・ラス張付け'},
+    161:{lat:34.3991042,lon:132.0901841,note:'巡視路平坦・基礎やや急'},
+    162:{lat:34.3966166,lon:132.0882985,note:'なだらか　林道近し　草低め'},
+    163:{lat:34.3925663,lon:132.0853803,note:'分岐点・平坦・木柵・低草'},
+    164:{lat:34.3891865,lon:132.083213,note:'シダ多い・手前巡視路大草'},
+    165:{lat:34.3863511,lon:132.0813623,note:'なだらか　草少なめ'},
+    166:{lat:34.3828714,lon:132.0791495,note:'全体的に急　草低め'},
+    167:{lat:34.3792079,lon:132.0768106,note:'全体的にやや急　草低め'},
+    168:{lat:34.3763954,lon:132.0756304,note:'全体的にやや急　草少なめ'},
+    169:{lat:34.3720131,lon:132.0721677,note:'草多め　山口県'},
+    170:{lat:34.3693918,lon:132.0701507,note:'草低め　穴有り　敷地内県境'},
+  };
+
+
+  function fromLabel(i){ return i===0 ? 'トラス' : String(towers[i-1].no); }
+
+  // ============================================================
+  // 状態管理
+  // ============================================================
+  const DEFAULT_STATE = { towers:{}, segs:{}, towerBlocked:{}, towerReason:{}, segBlocked:{}, segReason:{}, updatedAt:null };
+  let state = Object.assign({}, DEFAULT_STATE);
+  let filter = 'all'; // all | pending | done | blocked
+  const STORAGE_KEY = 'higashi_yamaguchi_kusakari_v1';
+
+  // Claude.ai内であれば window.storage が使え、全員で進捗を共有できる（通信が必要）。
+  // ファイルとして保存しブラウザで直接開いた場合は window.storage が無いため、
+  // その端末のローカル保存（完全オフライン・その端末のみ）に切り替える。
+  const hasCloud = (typeof window !== 'undefined') && !!window.storage;
+  const syncMode = hasCloud ? 'cloud' : 'local';
+  let syncOk = true;
+
+  function withTimeout(promise, ms){
+    return new Promise((resolve)=>{
+      let settled = false;
+      const timer = setTimeout(()=>{ if(!settled){ settled=true; resolve({timedOut:true}); } }, ms);
+      promise.then(
+        (v)=>{ if(!settled){ settled=true; clearTimeout(timer); resolve({value:v}); } },
+        (e)=>{ if(!settled){ settled=true; clearTimeout(timer); resolve({error:e}); } }
+      );
+    });
+  }
+
+  async function loadState(){
+    if(syncMode === 'cloud'){
+      const r = await withTimeout(window.storage.get(STORAGE_KEY, true), 7000);
+      if(r && r.value && r.value.value){
+        try{ state = Object.assign({}, DEFAULT_STATE, JSON.parse(r.value.value)); }catch(e){}
+        syncOk = true;
+      } else if(r && r.timedOut){
+        syncOk = false; // 通信待ちタイムアウト：ひとまずローカルの初期状態で表示を続ける
+      } else {
+        syncOk = true; // 未保存（キー無し）は正常な初回状態
+      }
+    } else {
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(raw){ state = Object.assign({}, DEFAULT_STATE, JSON.parse(raw)); }
+      }catch(e){ /* ignore */ }
+    }
+  }
+
+  async function saveState(){
+    state.updatedAt = new Date().toISOString();
+    if(syncMode === 'cloud'){
+      const r = await withTimeout(window.storage.set(STORAGE_KEY, JSON.stringify(state), true), 7000);
+      syncOk = !!(r && r.value);
+    } else {
+      try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); syncOk = true; }catch(e){ syncOk = false; }
+    }
+    updateSyncNote();
+  }
+
+  function updateSyncNote(){
+    const el = document.getElementById('syncNote');
+    if(!el) return;
+    if(syncMode === 'local'){
+      el.textContent = '最終更新：'+fmtTime(state.updatedAt)+'（この端末に保存・完全オフライン対応）';
+    } else if(syncOk){
+      el.textContent = '最終更新：'+fmtTime(state.updatedAt)+'（全員で共有・保存済み）';
+    } else {
+      el.textContent = '⚠ オフラインのため未保存（電波が入ったら「再同期」を押してください）';
+    }
+  }
+
+  async function resync(){ await saveState(); render(); }
+
+  function fmtTime(iso){
+    if(!iso) return '記録なし';
+    const d = new Date(iso);
+    return d.getMonth()+1+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  }
+
+  // 「一部施工不可」は号基／区間全体の未完了ではなく、部分的な例外の記録。
+  // フラグが立っている号基／区間は常に「施工完了」として扱う。
+  function isTowerDone(no){ return !!state.towers[no] || !!state.towerBlocked[no]; }
+  function isSegDone(i){ return !!state.segs[i] || !!state.segBlocked[i]; }
+
+  async function toggleTower(no){
+    state.towers[no] = !state.towers[no];
+    render();
+    await saveState();
+  }
+  async function toggleSeg(i){
+    state.segs[i] = !state.segs[i];
+    render();
+    await saveState();
+  }
+  async function toggleHazardTower(no){
+    if(state.towerBlocked[no]){
+      if(!confirm('「一部施工不可」の記録を解除しますか？（完了扱いはそのまま残ります）')) return;
+      delete state.towerBlocked[no];
+      delete state.towerReason[no];
+    } else {
+      const reason = window.prompt('一部施工できない理由を入力してください', '蜂の巣のため一部施工不可');
+      if(reason === null) return;
+      state.towerBlocked[no] = true;
+      state.towerReason[no] = reason || '一部施工不可';
+      state.towers[no] = true;
+    }
+    render();
+    await saveState();
+  }
+  async function toggleHazardSeg(i){
+    if(state.segBlocked[i]){
+      if(!confirm('「一部施工不可」の記録を解除しますか？（完了扱いはそのまま残ります）')) return;
+      delete state.segBlocked[i];
+      delete state.segReason[i];
+    } else {
+      const reason = window.prompt('一部施工できない理由を入力してください', '蜂の巣のため一部施工不可');
+      if(reason === null) return;
+      state.segBlocked[i] = true;
+      state.segReason[i] = reason || '一部施工不可';
+      state.segs[i] = true;
+    }
+    render();
+    await saveState();
+  }
+  async function doReset(){
+    if(!confirm('全ての完了・一部施工不可の記録を消去します。よろしいですか？（この操作は共有データにも反映されます）')) return;
+    state = Object.assign({}, DEFAULT_STATE, {towers:{}, segs:{}, towerBlocked:{}, towerReason:{}, segBlocked:{}, segReason:{}});
+    render();
+    await saveState();
+  }
+
+  function exportData(){
+    window.prompt('この内容をコピーして、他の端末の「取り込み」に貼り付けてください：', JSON.stringify(state));
+  }
+  function importData(){
+    const input = window.prompt('書き出したデータを貼り付けてください：', '');
+    if(!input) return;
+    try{
+      const incoming = JSON.parse(input);
+      Object.keys(incoming.towers||{}).forEach(k=>{ if(incoming.towers[k]) state.towers[k]=true; });
+      Object.keys(incoming.segs||{}).forEach(k=>{ if(incoming.segs[k]) state.segs[k]=true; });
+      Object.keys(incoming.towerBlocked||{}).forEach(k=>{
+        if(incoming.towerBlocked[k] && !state.towerBlocked[k]){
+          state.towerBlocked[k] = true;
+          state.towerReason[k] = (incoming.towerReason && incoming.towerReason[k]) || '一部施工不可';
+          state.towers[k] = true;
+        }
+      });
+      Object.keys(incoming.segBlocked||{}).forEach(k=>{
+        if(incoming.segBlocked[k] && !state.segBlocked[k]){
+          state.segBlocked[k] = true;
+          state.segReason[k] = (incoming.segReason && incoming.segReason[k]) || '一部施工不可';
+          state.segs[k] = true;
+        }
+      });
+      render();
+      saveState();
+    }catch(e){
+      alert('データを読み取れませんでした。書き出した内容をそのまま貼り付けてください。');
+    }
+  }
+
+  // ============================================================
+  // 報告一覧表（一部施工不可の箇所のみを抜き出す）
+  // ============================================================
+  function buildReportRows(){
+    const rows = [];
+    towers.forEach(t=>{
+      if(state.towerBlocked[t.no]){
+        rows.push({type:'鉄塔敷地', label:'No.'+t.no, qty:t.area.toLocaleString()+'㎡', reason: state.towerReason[t.no] || '一部施工不可'});
+      }
+    });
+    segments.forEach((g,i)=>{
+      if(g.excluded) return;
+      if(state.segBlocked[i]){
+        rows.push({type:'巡視路', label:fromLabel(i)+' → '+towers[i].no, qty:(g.dist!=null? g.dist.toLocaleString()+'m':'－'), reason: state.segReason[i] || '一部施工不可'});
+      }
+    });
+    return rows;
+  }
+
+  function buildReportText(rows){
+    const lines = [['種別','箇所','数量','一部施工不可の理由'].join('\t')];
+    rows.forEach(r=> lines.push([r.type, r.label, r.qty, r.reason].join('\t')));
+    return lines.join('\n');
+  }
+
+  function buildReportHtmlDoc(rows){
+    const today = new Date();
+    const dateStr = today.getFullYear()+'年'+(today.getMonth()+1)+'月'+today.getDate()+'日';
+    const trs = rows.map(r=>'<tr><td>'+r.type+'</td><td>'+r.label+'</td><td>'+r.qty+'</td><td>'+r.reason+'</td></tr>').join('');
+    return '<!doctype html><html lang="ja"><head><meta charset="utf-8">'
+      + '<title>東山口幹線 草刈工事 一部施工不可箇所 一覧表</title>'
+      + '<style>body{font-family:sans-serif; padding:24px; color:#22302A;} h1{font-size:18px;} '
+      + 'table{border-collapse:collapse; width:100%; margin-top:12px;} th,td{border:1px solid #999; padding:6px 8px; font-size:13px; text-align:left;} '
+      + 'th{background:#eee;} .meta{font-size:12px; color:#555; margin-top:4px; line-height:1.6;} '
+      + '@media print{button{display:none;}}</style></head><body>'
+      + '<h1>東山口幹線　草刈工事　一部施工不可箇所　一覧表</h1>'
+      + '<div class="meta">作成日：'+dateStr+' ／ 該当件数：'+rows.length+'件<br>'
+      + '鉄塔敷地・巡視路とも工事は完了しております。下記箇所のみ、記載の理由により一部区域を施工できなかった旨をご報告いたします。</div>'
+      + '<table><thead><tr><th>種別</th><th>箇所</th><th>数量</th><th>一部施工不可の理由</th></tr></thead><tbody>'
+      + (trs || '<tr><td colspan="4">該当箇所なし（全箇所、支障なく施工完了しております）</td></tr>')
+      + '</tbody></table>'
+      + '<p style="margin-top:20px;"><button onclick="window.print()" style="padding:8px 16px; font-size:13px;">印刷 / PDF保存</button></p>'
+      + '</body></html>';
+  }
+
+  function copyReportText(){
+    window.prompt('この内容をコピーして、メールやメッセージに貼り付けてください：', buildReportText(buildReportRows()));
+  }
+  function openReportTab(){
+    const blob = new Blob([buildReportHtmlDoc(buildReportRows())], {type:'text/html'});
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  }
+  function downloadReportHtml(){
+    const blob = new Blob([buildReportHtmlDoc(buildReportRows())], {type:'text/html'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const today = new Date();
+    const ymd = today.getFullYear()+String(today.getMonth()+1).padStart(2,'0')+String(today.getDate()).padStart(2,'0');
+    a.href = url;
+    a.download = '東山口幹線_一部施工不可報告_'+ymd+'.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 5000);
+  }
+
+  // ============================================================
+  // 描画
+  // ============================================================
+  function render(){
+    const towerDoneCount = towers.filter(t=>isTowerDone(t.no)).length;
+    const towerDoneArea = towers.filter(t=>isTowerDone(t.no)).reduce((s,t)=>s+t.area,0);
+    const towerBlockedCount = towers.filter(t=>state.towerBlocked[t.no]).length;
+
+    let segDoneCount = 0, segDoneDist = 0, segBlockedCount = 0;
+    segments.forEach((g,i)=>{
+      if(g.excluded) return;
+      if(isSegDone(i)){ segDoneCount++; segDoneDist += (g.dist||0); }
+      if(state.segBlocked[i]) segBlockedCount++;
+    });
+
+    const totalDone = towerDoneCount + segDoneCount;
+    const totalBlocked = towerBlockedCount + segBlockedCount;
+    const totalItems = N + SEG_TOTAL;
+    const pct = (a,b)=> b===0 ? 0 : Math.round(a/b*100);
+
+    const headerHtml = `<header class="top">
+      <a class="map-link" href="${MAP_URL}" target="_blank" rel="noopener">🗺️ 現場地図を開く</a>
+      <div class="line-name">東山口幹線</div>
+      <h1>草刈チェックリスト</h1>
+      <div class="sub">鉄塔敷地 ${N}基 ・ 巡視路 ${SEG_TOTAL}区間　全${totalItems}件中 <b>${totalDone}</b>件完了（${pct(totalDone,totalItems)}%）${totalBlocked>0 ? ' <span class="warn-chip">⚠ 一部施工不可 '+totalBlocked+'件</span>' : ''}</div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="lbl">鉄塔（基）</div>
+          <div class="val">${towerDoneCount}/${N}</div>
+          <div class="pct">${pct(towerDoneCount,N)}%</div>
+          <div class="bar"><div style="width:${pct(towerDoneCount,N)}%"></div></div>
+        </div>
+        <div class="stat">
+          <div class="lbl">敷地面積(㎡)</div>
+          <div class="val">${towerDoneArea.toLocaleString()}</div>
+          <div class="pct">/ ${TOTAL_TOWER_AREA.toLocaleString()}</div>
+          <div class="bar"><div style="width:${pct(towerDoneArea,TOTAL_TOWER_AREA)}%"></div></div>
+        </div>
+        <div class="stat">
+          <div class="lbl">巡視路(m)</div>
+          <div class="val">${segDoneDist.toLocaleString()}</div>
+          <div class="pct">/ ${TOTAL_DIST.toLocaleString()}</div>
+          <div class="bar"><div style="width:${pct(segDoneDist,TOTAL_DIST)}%"></div></div>
+        </div>
+      </div>
+
+      <div class="rail-wrap">
+        <div class="rail-lbl">ルート進捗（タップで移動）</div>
+        <div class="rail" id="rail"></div>
+      </div>
+
+      <div class="controls">
+        <div class="seg-filter" id="filterGroup">
+          <button data-f="all" class="${filter==='all'?'active':''}">すべて</button>
+          <button data-f="pending" class="${filter==='pending'?'active':''}">未完了</button>
+          <button data-f="done" class="${filter==='done'?'active':''}">完了</button>
+          <button data-f="blocked" class="${filter==='blocked'?'active':''}">一部あり</button>
+        </div>
+        <div class="jump"><input id="jumpInput" type="text" inputmode="numeric" placeholder="No.で検索 例:127"></div>
+      </div>
+    </header>`;
+
+    const footerHtml = `<div class="report-panel">
+      <div class="report-title">📋 施主向け報告一覧表</div>
+      <div class="report-desc">「一部あり」に記録した箇所（現在 <b>${totalBlocked}</b>件）だけをまとめた一覧表を自動作成します。鉄塔・巡視路自体は施工完了として扱われるので、この一覧表は「一部施工できなかった箇所とその理由」だけを報告するためのものです。</div>
+      <div class="report-btns">
+        <button class="report-btn primary" id="reportOpenBtn">開く（新しいタブ）</button>
+        <button class="report-btn" id="reportDownloadBtn">保存（HTML）</button>
+        <button class="report-btn" id="reportCopyBtn">コピー（テキスト）</button>
+      </div>
+      <div class="report-note">「開く」で今すぐ確認・印刷・PDF保存ができます。同じ端末・同じブラウザを開いている間だけ有効な一時リンクのため、他の人に送る場合は「保存」でファイルにしてから送ってください。</div>
+    </div>
+
+    <div class="footnote">
+      <b>注記</b><br>
+      ・「太陽光連絡」区間・敷地：太陽光発電所敷地内のため、中国電力ネットワーク(株)が施主と協議のうえ草刈期間・箇所を確定するまで立入禁止。<br>
+      ・No.12〜126間は林道溝掃除を含む（この区間は車両通行禁止）。<br>
+      ・No.13〜125は本工事の対象外のため番号が欠番。<br>
+      ・トラス〜No.1〜2間は施工自体がないためチェック対象から除外。<br>
+      ・⚠ボタンは、蜂の巣など安全上の理由で一部の区域だけ施工できなかった場合の記録用です。全体不可ではないため、記録すると自動的にその号基／区間は「完了」として扱われます。<br>
+      ${syncMode==='local' ? '・この画面はこの端末に保存されます（オフライン専用・他端末とは共有されません）。「書き出し／取り込み」で他端末の記録と手動で統合できます。' : '・通常はこの端末がオンラインの間、全員の進捗が自動で共有されます。電波が届かない現場ではオフラインのまま操作でき、電波が入った時に「再同期」で反映されます。'}
+    </div>
+
+    <div class="bottom-bar">
+      <div class="sync-note" id="syncNote">最終更新：${fmtTime(state.updatedAt)}</div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        ${syncMode==='cloud' && !syncOk ? '<button class="reset-btn" id="resyncBtn">再同期</button>' : ''}
+        <button class="reset-btn" id="exportBtn">書き出し</button>
+        <button class="reset-btn" id="importBtn">取り込み</button>
+        <button class="reset-btn" id="resetBtn">記録をリセット</button>
+      </div>
+    </div>`;
+
+    const app = document.getElementById('app');
+    app.innerHTML = headerHtml + '<main id="mainList"></main>' + footerHtml;
+
+    // ---- ルート進捗レール ----
+    const rail = document.getElementById('rail');
+    let railHtml = '';
+    for(let i=0;i<N;i++){
+      const seg = segments[i];
+      const edgeCls = seg.excluded ? 'na' : ((isSegDone(i)?'done ':'') + (state.segBlocked[i]?'blocked':''));
+      railHtml += '<div class="rail-edge '+edgeCls+'"></div>';
+      const tno = towers[i].no;
+      const nodeCls = (isTowerDone(tno)?'done ':'') + (state.towerBlocked[tno]?'blocked':'');
+      railHtml += '<div class="rail-node '+nodeCls+'" data-jump="'+tno+'"></div>';
+    }
+    rail.innerHTML = railHtml;
+    rail.querySelectorAll('.rail-node').forEach(el=>{
+      el.addEventListener('click', ()=> jumpTo(el.getAttribute('data-jump')));
+    });
+
+    // ---- メインリスト（トラス〜1〜2〜…〜170 の実経路順） ----
+    const main = document.getElementById('mainList');
+    let listHtml = '';
+    for(let i=0;i<N;i++){
+      const seg = segments[i];
+      if(seg.excluded){
+        listHtml += '<div class="seg-row">'
+          + '<div class="connector"><div class="stem"></div></div>'
+          + '<div class="seg-info" style="opacity:.6;">'+fromLabel(i)+' → '+towers[i].no+'　対象外（施工なし）</div>'
+          + '</div>';
+      } else {
+        const segDone = isSegDone(i);
+        const segBlocked = !!state.segBlocked[i];
+        const fromNo = i>0 ? towers[i-1].no : null;
+        const toNo = towers[i].no;
+        const fromGeo = fromNo ? TOWER_GEO[fromNo] : null;
+        const toGeo = TOWER_GEO[toNo];
+        const segHidden = filter !== 'all' && !(
+          (filter === 'pending' && !segDone) ||
+          (filter === 'done' && segDone) ||
+          (filter === 'blocked' && segBlocked)
+        );
+        listHtml += '<div class="seg-row '+(segHidden?'hide':'')+'">'
+          + '<div class="connector"><div class="stem"></div></div>'
+          + '<div class="seg-check '+(segDone?'done':'')+' '+(segBlocked?'blocked':'')+'" data-seg="'+i+'"></div>'
+          + '<div class="seg-info" style="flex:1;">'
+          + '<b>'+fromLabel(i)+' → '+towers[i].no+'</b>　'
+          + (seg.dist!=null ? seg.dist.toLocaleString()+'m（密'+seg.dense.toLocaleString()+'/疎'+seg.sparse.toLocaleString()+'）' : '距離未測定（協議事項）')
+          + (seg.clean ? '　清掃'+seg.clean.toLocaleString()+'㎡' : '')
+          + (seg.note ? ' <span class="seg-note">'+seg.note+'</span>' : '')
+          + (segBlocked ? '<span class="blocked-reason">⚠ '+(state.segReason[i]||'一部施工不可')+'</span>' : '')
+          + (fromGeo && toGeo ? ' <a class="seg-nav" href="https://www.google.com/maps/dir/?api=1&origin='+fromGeo.lat+','+fromGeo.lon+'&destination='+toGeo.lat+','+toGeo.lon+'&travelmode=walking" target="_blank" rel="noopener">🚶この区間へ</a>' : '')
+          + '</div>'
+          + '<div class="hazard-btn '+(segBlocked?'active':'')+'" data-hazard-seg="'+i+'" title="一部施工不可を記録">⚠</div>'
+          + '</div>';
+      }
+
+      const t = towers[i];
+      const tDone = isTowerDone(t.no);
+      const tBlocked = !!state.towerBlocked[t.no];
+      const geo = TOWER_GEO[t.no];
+      const isDanger = geo && /危険/.test(geo.note);
+      const tHidden = filter !== 'all' && !(
+        (filter === 'pending' && !tDone) ||
+        (filter === 'done' && tDone) ||
+        (filter === 'blocked' && tBlocked)
+      );
+      listHtml += '<div class="tower-row '+(tHidden?'hide':'')+'" id="tower-'+t.no+'">'
+        + '<div style="display:flex;">'
+        + '<div class="connector"><div class="dot"></div></div>'
+        + '<div class="tower-card '+(tDone?'done':'')+' '+(tBlocked?'blocked':'')+'">'
+        + '<div class="tower-check '+(tDone?'done':'')+' '+(tBlocked?'blocked':'')+'" data-tower="'+t.no+'"></div>'
+        + '<div class="tower-body">'
+        + '<div class="tower-top">'
+        + '<span class="tower-no">No.'+t.no+'</span>'
+        + '<span class="tower-area">敷地草刈 <b>'+t.area.toLocaleString()+'</b>㎡</span>'
+        + (t.note ? '<span class="tower-note">'+t.note+'</span>' : '')
+        + '</div>'
+        + (geo ? '<span class="field-note '+(isDanger?'danger':'')+'">'+(isDanger?'⚠ ':'')+geo.note+'</span>' : '')
+        + (tBlocked ? '<span class="blocked-reason">⚠ '+(state.towerReason[t.no]||'一部施工不可')+'</span>' : '')
+        + '</div>'
+        + (geo ? '<a class="nav-btn" href="https://www.google.com/maps/dir/?api=1&destination='+geo.lat+','+geo.lon+'" target="_blank" rel="noopener">📍ナビ開始</a>' : '')
+        + '<div class="hazard-btn '+(tBlocked?'active':'')+'" data-hazard-tower="'+t.no+'" title="一部施工不可を記録">⚠</div>'
+        + '</div></div></div>';
+    }
+    main.innerHTML = listHtml;
+
+    // ---- イベント登録 ----
+    main.querySelectorAll('.seg-check').forEach(el=>{
+      el.addEventListener('click', ()=> toggleSeg(parseInt(el.getAttribute('data-seg'), 10)));
+    });
+    main.querySelectorAll('.tower-check').forEach(el=>{
+      el.addEventListener('click', ()=> toggleTower(el.getAttribute('data-tower')));
+    });
+    main.querySelectorAll('[data-hazard-seg]').forEach(el=>{
+      el.addEventListener('click', ()=> toggleHazardSeg(parseInt(el.getAttribute('data-hazard-seg'), 10)));
+    });
+    main.querySelectorAll('[data-hazard-tower]').forEach(el=>{
+      el.addEventListener('click', ()=> toggleHazardTower(el.getAttribute('data-hazard-tower')));
+    });
+    const filterGroup = document.getElementById('filterGroup');
+    if(filterGroup){
+      filterGroup.querySelectorAll('button').forEach(el=>{
+        el.addEventListener('click', ()=>{ filter = el.getAttribute('data-f'); render(); });
+      });
+    }
+    const resetBtn = document.getElementById('resetBtn');
+    if(resetBtn) resetBtn.addEventListener('click', doReset);
+    const exportBtn = document.getElementById('exportBtn');
+    if(exportBtn) exportBtn.addEventListener('click', exportData);
+    const importBtn = document.getElementById('importBtn');
+    if(importBtn) importBtn.addEventListener('click', importData);
+    const resyncBtn = document.getElementById('resyncBtn');
+    if(resyncBtn) resyncBtn.addEventListener('click', resync);
+    const reportOpenBtn = document.getElementById('reportOpenBtn');
+    if(reportOpenBtn) reportOpenBtn.addEventListener('click', openReportTab);
+    const reportDownloadBtn = document.getElementById('reportDownloadBtn');
+    if(reportDownloadBtn) reportDownloadBtn.addEventListener('click', downloadReportHtml);
+    const reportCopyBtn = document.getElementById('reportCopyBtn');
+    if(reportCopyBtn) reportCopyBtn.addEventListener('click', copyReportText);
+    const jumpInput = document.getElementById('jumpInput');
+    if(jumpInput){
+      jumpInput.addEventListener('keydown', (e)=>{
+        if(e.key === 'Enter'){ jumpTo(jumpInput.value.trim()); }
+      });
+    }
+  }
+
+  function jumpTo(no){
+    const el = document.getElementById('tower-'+no);
+    if(el){
+      el.scrollIntoView({behavior:'smooth', block:'center'});
+      el.style.outline = '2px solid var(--rust)';
+      setTimeout(()=>{ el.style.outline = ''; }, 1200);
+    }
+  }
+
+  // ============================================================
+  // 初期化：読み込みに失敗・タイムアウトしても必ず画面を表示する
+  // ============================================================
+  (async function init(){
+    try{
+      await loadState();
+    }catch(e){
+      console.error('loadState failed:', e);
+      syncOk = false;
+    }finally{
+      render();
+    }
+  })();
+
+})();
+</script>
+</body>
+</html>
