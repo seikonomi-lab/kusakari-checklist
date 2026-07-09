@@ -2,813 +2,1360 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>東山口幹線 草刈チェックリスト</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>草刈工事 作業日報</title>
 <style>
-  html, body{margin:0; padding:0; background:#E9EEE2;}
-
   :root{
-    --bg:#E9EEE2;
-    --bg-card:#F7F9F2;
-    --ink:#22302A;
-    --ink-soft:#5B6A61;
-    --line:#C9D2BE;
-    --pending:#B9822A;
-    --pending-bg:#F5E8CC;
-    --done:#2F6B52;
-    --done-bg:#DCEBE1;
-    --rust:#9C4E2E;
-    --rust-bg:#EEDBCC;
-    --blocked:#A63B2E;
-    --blocked-bg:#F1DAD3;
+    --bg:#f4f3ef; --panel:#fff; --ink:#1e1e1c; --ink-soft:#6b6a63; --line:#dedcd3;
+    --safety:#e0570f; --safety-dark:#b8440a; --steel:#2b4a63; --done:#2f7a45;
+    --warn-bg:#fff2e2; --warn-border:#e0570f; --radius:14px;
+    font-family:-apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif;
   }
-  *{box-sizing:border-box;}
-  #app{
-    font-family:'IBM Plex Sans JP','IBM Plex Sans',sans-serif;
-    background:var(--bg);
-    color:var(--ink);
-    min-height:100%;
-    padding-bottom:40px;
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{margin:0; background:var(--bg); color:var(--ink); padding-bottom:110px;}
+  header.top{background:var(--ink); color:#fff; padding:18px 16px 16px; position:sticky; top:0; z-index:20; box-shadow:0 2px 8px rgba(0,0,0,.15);}
+  header.top .stripe{height:5px; margin:-18px -16px 12px; background:repeating-linear-gradient(45deg, var(--safety), var(--safety) 14px, #1e1e1c 14px, #1e1e1c 28px);}
+  header.top h1{font-size:16px; margin:0; font-weight:700;}
+  header.top .sub{font-size:12px; color:#c9c8c2; margin-top:3px;}
+  header.top .gear{position:absolute; right:14px; top:20px; background:none; border:none; color:#fff; font-size:20px; padding:4px 8px;}
+  main{padding:14px; max-width:520px; margin:0 auto;}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px; margin-bottom:14px; transition:box-shadow .2s, border-color .2s;}
+  .card.field-flash{border-color:var(--safety); box-shadow:0 0 0 3px rgba(224,87,15,.35); animation:flashPulse 0.6s ease-in-out 3;}
+  @keyframes flashPulse{
+    0%, 100% { background-color:#fff; }
+    50% { background-color:#fff2e2; }
   }
-  #loading{padding:40px 20px; text-align:center; color:var(--ink-soft); font-size:13px;}
+  .card h2{font-size:14px; margin:0 0 12px; display:flex; align-items:center; gap:8px;}
+  .card h2 .badge{background:var(--safety); color:#fff; font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px;}
+  .card h2 .badge.steel{background:var(--steel);}
+  .card h2 .badge.done{background:var(--done);}
+  label{display:block; font-size:12px; color:var(--ink-soft); margin:10px 0 4px; font-weight:600;}
+  label:first-of-type{margin-top:0;}
+  input[type=text], input[type=date], input[type=number], textarea, select{
+    width:100%; padding:11px 12px; border:1.5px solid var(--line); border-radius:10px; font-size:15px; font-family:inherit; background:#fff; color:var(--ink);
+  }
+  input[disabled]{background:#f0efe9; color:var(--ink-soft);}
+  textarea{resize:vertical; min-height:52px;}
+  input:focus, textarea:focus{outline:none; border-color:var(--safety);}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .fixed-pill{display:inline-flex; align-items:center; gap:6px; background:#f0efe9; border:1.5px solid var(--line); border-radius:10px; padding:10px 12px; font-size:14px; font-weight:600; color:var(--ink); width:100%;}
+  .fixed-pill .tag{font-size:10px; background:var(--ink-soft); color:#fff; padding:2px 6px; border-radius:6px; font-weight:700;}
+  .chiplist{display:flex; flex-wrap:wrap; gap:8px; margin-top:4px;}
+  .chip{padding:8px 14px; border-radius:20px; border:1.5px solid var(--line); background:#fff; font-size:13px; color:var(--ink-soft); font-weight:600;}
+  .chip.on{background:var(--steel); border-color:var(--steel); color:#fff;}
+  .tower-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-top:8px;}
+  .tower-btn{aspect-ratio:1; border-radius:8px; border:1.5px solid var(--line); background:#fff; font-size:12px; font-weight:700; color:var(--ink-soft); display:flex; align-items:center; justify-content:center;}
+  .tower-btn.done{background:var(--done); border-color:var(--done); color:#fff;}
+  .tower-btn.today{outline:2px solid var(--safety); outline-offset:1px;}
+  .progress-summary{display:flex; align-items:center; justify-content:space-between; margin-top:10px; padding:10px 12px; background:var(--bg); border-radius:10px;}
+  .progress-summary b{font-size:16px;}
+  .weekgrid{display:flex; gap:8px; margin-top:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:6px;}
+  .daycol{text-align:center; flex:0 0 108px; width:108px;}
+  .daycol .dname{font-size:11px; font-weight:700; color:var(--ink-soft); margin-bottom:4px;}
+  .daycol .dname.sat{color:#2b6ea6;} .daycol .dname.sun{color:var(--safety);}
+  .daycol textarea{font-size:12px; padding:6px; min-height:60px; width:100%;}
+  .daycol .off-btn{width:100%; font-size:11px; padding:5px 0; border-radius:8px; border:1.5px solid var(--line); background:#fff; color:var(--ink-soft); margin-top:4px; font-weight:600;}
+  .daycol .off-btn.on{background:var(--ink-soft); color:#fff; border-color:var(--ink-soft);}
+  .banner{background:var(--warn-bg); border:1.5px solid var(--warn-border); border-radius:12px; padding:12px 14px; margin-bottom:14px; font-size:13px; line-height:1.6; color:var(--safety-dark); display:flex; gap:10px;}
+  .hint{font-size:11px; color:var(--ink-soft); margin-top:6px; line-height:1.5;}
+  .footer-bar{position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid var(--line); padding:12px 14px calc(12px + env(safe-area-inset-bottom)); z-index:30; box-shadow:0 -4px 12px rgba(0,0,0,.06);}
+  .footer-bar .inner{max-width:520px; margin:0 auto; display:flex; gap:6px;}
+  .btn-main{flex:1.3; background:var(--safety); color:#fff; border:none; border-radius:12px; font-size:13px; font-weight:700; padding:14px 6px;}
+  .btn-main:active{background:var(--safety-dark);}
+  .btn-sub{flex:1; background:var(--panel); color:var(--steel); border:1.5px solid var(--steel); border-radius:12px; font-size:12px; font-weight:700; padding:14px 4px;}
+  .modal-overlay{position:fixed; inset:0; background:rgba(20,20,18,.5); z-index:50; display:flex; align-items:flex-end; justify-content:center;}
+  .modal{background:#fff; width:100%; max-width:560px; border-radius:18px 18px 0 0; padding:18px 16px calc(18px + env(safe-area-inset-bottom)); max-height:90vh; overflow-y:auto;}
+  .modal h3{margin:0 0 10px; font-size:16px;}
+  .modal .close{float:right; background:none; border:none; font-size:20px; color:var(--ink-soft);}
+  .modal-actions{display:flex; flex-direction:column; gap:10px; margin-top:14px;}
+  .link-btn{display:block; text-align:center; padding:13px; border-radius:12px; font-weight:700; font-size:14px; text-decoration:none; border:none; width:100%;}
+  .link-btn.share{background:var(--safety); color:#fff;}
+  .link-btn.gmail{background:#c2410c; color:#fff;}
+  .link-btn.mailapp{background:var(--steel); color:#fff;}
+  .link-btn.dl{background:var(--panel); color:var(--ink); border:1.5px solid var(--line);}
+  .toast{position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 18px; border-radius:20px; font-size:13px; z-index:60; opacity:0; transition:opacity .25s;}
+  .toast.show{opacity:1;}
 
-  header.top{
-    position:sticky; top:0; z-index:20;
-    background:var(--bg);
-    padding:14px 14px 10px;
-    border-bottom:2px solid var(--ink);
+  .progress-widget{position:fixed; right:14px; bottom:96px; z-index:55; display:flex; flex-direction:column; align-items:flex-end;}
+  .progress-widget .badge-btn{
+    width:60px; height:60px; border-radius:50%; background:var(--steel); color:#fff; border:3px solid #fff;
+    box-shadow:0 3px 12px rgba(0,0,0,.3); font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center;
+    line-height:1.1;
   }
-  .line-name{font-size:12px; color:var(--rust); font-weight:700; letter-spacing:.08em;}
-  .map-link{
-    display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700;
-    color:var(--bg-card); background:var(--ink); border-radius:12px; padding:4px 10px;
-    text-decoration:none; float:right; margin-top:-2px;
+  .progress-widget .panel{
+    display:none; background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:0 4px 16px rgba(0,0,0,.25);
+    padding:12px 14px; margin-bottom:8px; font-size:12px; line-height:1.9; color:var(--ink); width:210px; text-align:right;
   }
-  h1{
-    font-family:'Oswald',sans-serif; font-weight:700; font-size:20px; margin:2px 0 0;
-    letter-spacing:.01em;
-  }
-  .sub{font-size:11px; color:var(--ink-soft); margin-top:2px; line-height:1.6;}
-  .sub .warn-chip{color:var(--blocked); font-weight:700;}
+  .progress-widget.open .panel{display:block;}
+  .progress-widget .panel .ttl{font-weight:700; font-size:12px; color:var(--ink-soft); margin-bottom:4px; text-align:left;}
+  .preview-full{position:fixed; inset:0; background:#525659; z-index:70; display:none; flex-direction:column;}
+  .preview-full .bar{background:#323639; color:#fff; padding:12px 14px calc(10px + env(safe-area-inset-top)); display:flex; align-items:center; justify-content:space-between; font-size:14px; font-weight:700;}
+  .preview-full .bar button{background:none; border:none; color:#fff; font-size:20px; padding:4px 8px;}
+  .preview-scroll{flex:1; width:100%; overflow:auto; -webkit-overflow-scrolling:touch; padding:16px; box-sizing:border-box;}
+  .preview-scroll img{display:block; width:100%; height:auto; background:#fff; box-shadow:0 2px 10px rgba(0,0,0,.3); transform-origin:top left;}
+  .zoom-bar{background:#323639; padding:10px 14px calc(10px + env(safe-area-inset-bottom)); display:flex; align-items:center; justify-content:center; gap:16px;}
+  .zoom-bar button{background:#4a4e51; color:#fff; border:none; width:38px; height:38px; border-radius:50%; font-size:18px; font-weight:700;}
+  .zoom-bar button:last-child{width:auto; border-radius:10px; padding:0 14px; font-size:13px;}
+  .zoom-bar span{color:#fff; font-size:13px; min-width:44px; text-align:center;}
+  .small-btn{font-size:12px; background:none; border:1.5px solid var(--line); border-radius:8px; padding:6px 10px; color:var(--ink-soft); font-weight:600;}
+  .rm-chip{display:inline-flex; align-items:center; gap:6px; background:var(--bg); border:1px solid var(--line); border-radius:20px; padding:6px 8px 6px 12px; font-size:13px; margin:3px 4px 3px 0; font-weight:600; color:var(--ink);}
+  .rm-chip button{background:var(--ink-soft); color:#fff; border:none; width:18px; height:18px; border-radius:50%; font-size:11px; line-height:1;}
 
-  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:12px;}
-  .stat{
-    background:var(--bg-card); border:1px solid var(--line); border-radius:4px;
-    padding:7px 6px 8px; text-align:center;
-  }
-  .stat .lbl{font-size:9.5px; color:var(--ink-soft); letter-spacing:.04em;}
-  .stat .val{font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600; margin-top:2px;}
-  .stat .pct{font-size:10px; color:var(--done); font-weight:600;}
-  .stat .bar{height:4px; background:var(--line); border-radius:2px; margin-top:5px; overflow:hidden;}
-  .stat .bar > div{height:100%; background:var(--done);}
-
-  .rail-wrap{margin-top:10px;}
-  .rail-lbl{font-size:9.5px; color:var(--ink-soft); letter-spacing:.05em; margin-bottom:4px;}
-  .rail{display:flex; align-items:center; overflow-x:auto; padding:6px 2px 8px; -webkit-overflow-scrolling:touch;}
-  .rail::-webkit-scrollbar{height:3px;}
-  .rail-edge{width:10px; height:2px; background:var(--line); flex:0 0 auto;}
-  .rail-edge.done{background:var(--done);}
-  .rail-edge.blocked{background:var(--blocked);}
-  .rail-edge.na{background:transparent; border-top:1px dashed var(--ink-soft);}
-  .rail-node{
-    width:9px; height:9px; border-radius:50%; flex:0 0 auto;
-    background:var(--pending); border:1.5px solid var(--bg);
-    box-shadow:0 0 0 1px var(--ink-soft); cursor:pointer;
-  }
-  .rail-node.done{background:var(--done); box-shadow:0 0 0 1px var(--done);}
-  .rail-node.blocked{background:var(--blocked); box-shadow:0 0 0 1px var(--blocked);}
-
-  .controls{display:flex; gap:6px; margin-top:10px; align-items:center; flex-wrap:wrap;}
-  .seg-filter{display:flex; flex-wrap:wrap; background:var(--bg-card); border:1px solid var(--line); border-radius:4px; overflow:hidden;}
-  .seg-filter button{
-    border:none; background:transparent; color:var(--ink-soft); font-size:11.5px;
-    padding:6px 10px; font-weight:600; cursor:pointer; font-family:inherit;
-  }
-  .seg-filter button.active{background:var(--ink); color:var(--bg-card);}
-  .jump{flex:1; display:flex;}
-  .jump input{
-    width:100%; border:1px solid var(--line); border-radius:4px; padding:6px 8px;
-    font-size:12.5px; font-family:'IBM Plex Mono',monospace; background:var(--bg-card); color:var(--ink);
-  }
-  .jump input::placeholder{color:var(--ink-soft); opacity:.8;}
-
-  main{padding:6px 12px 0;}
-  .connector{width:34px; display:flex; flex-direction:column; align-items:center; flex:0 0 auto;}
-  .connector .dot{width:8px; height:8px; border-radius:50%; background:var(--ink-soft);}
-  .connector .stem{width:2px; flex:1; background:var(--line);}
-
-  .seg-row{display:flex; align-items:center; min-height:34px;}
-  .seg-row.hide{display:none;}
-  .seg-check{
-    width:20px; height:20px; border-radius:4px; border:2px solid var(--pending);
-    flex:0 0 auto; margin-right:10px; cursor:pointer; position:relative;
-  }
-  .seg-check.done{background:var(--done); border-color:var(--done);}
-  .seg-check.done::after{
-    content:''; position:absolute; left:5px; top:1px; width:5px; height:9px;
-    border:solid var(--bg-card); border-width:0 2px 2px 0; transform:rotate(40deg);
-  }
-  .seg-check.blocked{background:var(--blocked); border-color:var(--blocked);}
-  .seg-check.blocked::after{
-    content:'!'; position:absolute; left:6px; top:-1px; color:var(--bg-card); font-size:13px; font-weight:700;
-  }
-  .hazard-btn{
-    flex:0 0 auto; width:22px; height:22px; border-radius:50%; border:1.5px dashed var(--blocked);
-    color:var(--blocked); background:transparent; font-size:12px; line-height:1;
-    display:flex; align-items:center; justify-content:center; cursor:pointer; margin-left:6px;
-  }
-  .hazard-btn.active{background:var(--blocked); color:var(--bg-card); border-style:solid;}
-  .blocked-reason{display:block; font-size:10.5px; color:var(--blocked); font-weight:600; margin-top:2px;}
-  .seg-info{font-size:11.5px; color:var(--ink-soft); line-height:1.4;}
-  .seg-info b{font-family:'IBM Plex Mono',monospace; color:var(--ink); font-weight:600;}
-  .seg-note{
-    display:inline-block; font-size:9.5px; font-weight:600; padding:1px 6px;
-    border-radius:8px; background:var(--rust-bg); color:var(--rust); margin-left:6px;
-  }
-
-  .tower-row{margin:6px 0;}
-  .tower-row.hide{display:none;}
-  .tower-card{
-    background:var(--bg-card); border:1px solid var(--line); border-radius:6px;
-    padding:10px 12px; display:flex; align-items:center; gap:10px; flex:1; flex-wrap:wrap;
-    transition:background .15s, border-color .15s;
-  }
-  .tower-card.done{border-color:var(--done); background:var(--done-bg);}
-  .tower-card.blocked{border-color:var(--blocked); background:var(--blocked-bg);}
-  .tower-check{
-    width:30px; height:30px; border-radius:50%; border:2.5px solid var(--pending);
-    flex:0 0 auto; cursor:pointer; position:relative; background:var(--bg-card);
-  }
-  .tower-check.done{background:var(--done); border-color:var(--done);}
-  .tower-check.done::after{
-    content:''; position:absolute; left:9px; top:5px; width:6px; height:12px;
-    border:solid var(--bg-card); border-width:0 3px 3px 0; transform:rotate(40deg);
-  }
-  .tower-check.blocked{background:var(--blocked); border-color:var(--blocked);}
-  .tower-check.blocked::after{
-    content:'!'; position:absolute; left:12px; top:2px; color:var(--bg-card); font-size:18px; font-weight:700;
-  }
-  .tower-body{flex:1; min-width:0;}
-  .tower-top{display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;}
-  .tower-no{font-family:'Oswald',sans-serif; font-size:16px; font-weight:700;}
-  .tower-area{font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink-soft);}
-  .tower-area b{color:var(--ink); font-weight:600;}
-  .tower-note{font-size:9.5px; font-weight:600; padding:1px 6px; border-radius:8px; background:var(--pending-bg); color:var(--pending);}
-  .field-note{display:block; font-size:10.5px; color:var(--ink-soft); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .field-note.danger{color:var(--blocked); font-weight:700;}
-  .nav-btn{
-    flex:0 0 auto; font-size:10px; font-weight:700; color:var(--ink); background:var(--bg-card);
-    border:1px solid var(--ink-soft); border-radius:12px; padding:5px 9px; text-decoration:none;
-    white-space:nowrap;
-  }
-  .seg-nav{flex:0 0 auto; font-size:9.5px; color:var(--ink-soft); text-decoration:none; border:1px solid var(--line); border-radius:10px; padding:2px 7px; margin-left:4px;}
-
-  .report-panel{margin:18px 12px 0; padding:14px; background:var(--blocked-bg); border:1px solid var(--blocked); border-radius:6px;}
-  .report-title{font-family:'Oswald',sans-serif; font-weight:700; font-size:14px; color:var(--blocked); letter-spacing:.02em;}
-  .report-desc{font-size:11.5px; color:var(--ink); line-height:1.6; margin-top:6px;}
-  .report-desc b{color:var(--blocked);}
-  .report-btns{display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;}
-  .report-btn{
-    border:1px solid var(--blocked); background:var(--bg-card); color:var(--blocked);
-    border-radius:4px; padding:8px 12px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit;
-  }
-  .report-btn.primary{background:var(--blocked); color:var(--bg-card);}
-  .report-note{font-size:10px; color:var(--ink-soft); margin-top:8px; line-height:1.5;}
-
-  .footnote{
-    margin:18px 12px 0; padding:12px; background:var(--bg-card); border:1px solid var(--line);
-    border-radius:6px; font-size:11px; color:var(--ink-soft); line-height:1.6;
-  }
-  .footnote b{color:var(--ink);}
-
-  .bottom-bar{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px; margin:14px 12px 0; font-size:11px; color:var(--ink-soft);}
-  .reset-btn{
-    background:none; border:1px solid var(--rust); color:var(--rust); border-radius:4px;
-    padding:6px 10px; font-size:11px; font-weight:600; cursor:pointer; font-family:inherit;
-  }
+  /* Excel-style report table */
+  .sheet-scroll{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:#fff; margin-top:6px;}
+  table.excel-tbl{border-collapse:separate; border-spacing:0; table-layout:fixed; width:720px; font-size:10px; line-height:1.25; font-family:"Hiragino Mincho ProN","Yu Mincho","YuMincho","MS Mincho","Noto Serif JP",serif; color:#000; background:#fff;}
+  table.excel-tbl td{border:1px solid #000; padding:2px 3px; vertical-align:middle; background:#fff; overflow:visible; white-space:nowrap;}
+  table.excel-tbl td.wrap{white-space:normal; word-break:break-all;}
+  table.excel-tbl td.title{font-size:17px; font-weight:400; text-align:center; letter-spacing:.35em; padding:9px; border:none; white-space:nowrap;}
+  table.excel-tbl td.label{font-weight:400; text-align:center; font-size:9px; white-space:normal; word-break:normal; overflow-wrap:break-word; line-height:1.2;}
+  table.excel-tbl td.subhead{font-weight:400; text-align:center;}
+  table.excel-tbl td.center{text-align:center;}
+  table.excel-tbl td.note{border:none; font-size:9px; text-align:left; vertical-align:top; white-space:normal;}
+  table.excel-tbl td.nowrap{white-space:nowrap;}
+  table.excel-tbl tr.rh td{height:20px;}
+  table.excel-tbl tr.rhw td{height:24px;}
 </style>
 </head>
 <body>
-<div id="app"><div id="loading">読み込み中…</div></div>
+
+<header class="top">
+  <div class="stripe"></div>
+  <h1>草刈工事 作業日報</h1>
+  <div class="sub" id="subtitleLine">５００ｋＶ東山口幹線　鉄塔敷地・巡視路草刈工事</div>
+  <button class="gear" onclick="openSettings()">⚙</button>
+</header>
+
+<main>
+  <div id="thuBanner"></div>
+  <div id="dateWarningBanner"></div>
+  <div id="sandboxBanner"></div>
+
+  <!-- 送信日 -->
+  <div class="card">
+    <h2><span class="badge steel">送信</span> 送信日</h2>
+    <label>送信日</label>
+    <input type="date" id="sendDateInput" onchange="onSendDateChange()">
+    <div class="hint">通常は作業日と同じ日付が自動で入りますが、都合により変更したい場合はここで変更できます。</div>
+  </div>
+
+  <!-- 本日の実績 -->
+  <div class="card">
+    <h2><span class="badge">実績</span> 本日の作業実績</h2>
+    <label>作業日</label>
+    <input type="date" id="workDate" onchange="onDateChange()">
+
+    <label style="display:flex; align-items:center; gap:8px; margin-top:12px;">
+      <input type="checkbox" id="noWorkToday" onchange="onNoWorkToggle()" style="width:auto;">
+      本日は実績なし（予定のみ報告する日）
+    </label>
+    <div class="hint">初日や、作業日が長く空いた後など、実績がなく予定だけを報告する場合はここにチェックしてください。</div>
+
+    <div id="todayWorkFields">
+      <label>作業場所・範囲（本日完了した鉄塔）</label>
+      <input type="text" id="workRange" readonly placeholder="下で鉄塔を選択すると自動入力されます">
+
+      <label>鉄塔を選択して追加</label>
+      <div class="row2">
+        <select id="towerPickToday"></select>
+        <button class="small-btn" onclick="pickTodayAdd()">＋ 本日分に追加</button>
+      </div>
+      <div class="chiplist" id="todayChips" style="margin-top:8px;"></div>
+    </div>
+
+    <div id="todayTeamFields">
+      <label>作業体制（人数）</label>
+      <div class="fixed-pill" id="teamCountDisplay">1名</div>
+
+      <label>作業班長</label>
+      <div class="fixed-pill">森田　実 <span class="tag">固定</span></div>
+
+      <label>作業員（森田　実　以外のメンバー）</label>
+      <div class="chiplist" id="memberChips"></div>
+      <div style="margin-top:8px; display:flex; gap:6px;">
+        <input type="text" id="newMemberName" placeholder="名前を追加">
+        <button class="small-btn" onclick="addMember()">＋追加</button>
+      </div>
+    </div>
+    <div id="todayNoWorkNote" class="hint" style="display:none;">実績なしの日のため、人数・作業員は空欄でPDFに出力されます。</div>
+  </div>
+
+  <!-- 進捗チェックリスト（全体表示・タップ不要） -->
+  <div class="card">
+    <h2><span class="badge done">進捗</span> 鉄塔進捗（全<span id="towerTotalLabel">57</span>基）</h2>
+    <div class="hint">全体の完了状況です。緑＝完了済み、オレンジ枠＝本日追加した番号。追加・取消は上の「鉄塔を選択」から行ってください。</div>
+    <div class="tower-grid" id="towerGrid"></div>
+    <div class="progress-summary">
+      <span>累積進捗</span>
+      <b id="progressLabel">0/57基</b>
+    </div>
+  </div>
+
+  <!-- 翌日の予定 -->
+  <div class="card">
+    <h2><span class="badge steel">予定</span> 次の作業予定</h2>
+    <label>作業予定日</label>
+    <input type="date" id="nextWorkDate" onchange="onNextWorkDateChange()">
+    <div class="hint">通常は作業日の翌日ですが、間が空く場合はここで日付を変更できます。</div>
+
+    <label>作業場所・範囲</label>
+    <input type="text" id="nextRange" readonly placeholder="下で鉄塔を選択すると自動入力されます">
+
+    <label>鉄塔を選択して追加</label>
+    <div class="row2">
+      <select id="towerPickNext"></select>
+      <button class="small-btn" onclick="pickNextAdd()">＋ 翌日予定に追加</button>
+    </div>
+    <div class="chiplist" id="nextChips" style="margin-top:8px;"></div>
+
+    <label>作業体制（人数）</label>
+    <div class="fixed-pill" id="nextTeamCountDisplay">1名</div>
+
+    <label>作業班長</label>
+    <div class="fixed-pill">森田　実 <span class="tag">固定</span></div>
+
+    <label>作業員（森田　実　以外のメンバー）</label>
+    <div class="chiplist" id="nextMemberChips"></div>
+    <div style="margin-top:8px; display:flex; gap:6px;">
+      <input type="text" id="newNextMemberName" placeholder="名前を追加">
+      <button class="small-btn" onclick="addNextMember()">＋追加</button>
+    </div>
+  </div>
+
+  <!-- 週間予定 -->
+  <div class="card">
+    <h2><span class="badge done">週報</span> 来週の作業予定
+      <span style="font-weight:400; font-size:11px; color:var(--ink-soft); margin-left:auto;">木曜日までに報告</span>
+    </h2>
+    <label>週の開始日（月曜）</label>
+    <input type="date" id="weekStart" onchange="onWeekStartChange()">
+    <div class="hint">通常は木曜日に自動で翌週の日付になります。お盆休みなど、翌週も飛ばしてさらに先の週を報告する場合はここを直接変更してください。</div>
+
+    <button type="button" class="small-btn" style="margin-top:10px; width:100%;" onclick="toggleAllWeekOff()" id="allOffBtn">この週はすべて休工にする（お盆休みなど）</button>
+    <div class="hint">← 横にスクロールできます →</div>
+    <div class="weekgrid" id="weekGrid"></div>
+  </div>
+
+  <!-- 送信情報 -->
+  <div class="card">
+    <h2><span class="badge steel">宛先</span> 送信情報</h2>
+    <div class="hint" id="sendInfoSummary" style="font-size:13px; color:var(--ink);"></div>
+    <button class="small-btn" style="margin-top:10px;" onclick="openSettings()">送信情報を編集</button>
+  </div>
+
+  <!-- 日報プレビュー（エクセル様式） -->
+  <div class="card">
+    <h2><span class="badge">帳票</span> 作業日報プレビュー（元の様式）</h2>
+    <div class="hint">左右にスクロールできます。この内容でPDFを作成します。</div>
+    <div class="sheet-scroll">
+      <table class="excel-tbl" id="excelSheet"></table>
+    </div>
+  </div>
+</main>
+
+<div class="footer-bar">
+  <div class="inner">
+    <button class="btn-sub" onclick="saveDraft(true)">一時保存</button>
+    <button class="btn-sub" onclick="previewPdf()">👁 プレビュー</button>
+    <button class="btn-main" onclick="startSend()">📄 PDF作成</button>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<!-- 全体進捗ウィジェット（作業日報には反映されません。自分用の進捗確認のみ） -->
+<div id="progressWidget" class="progress-widget">
+  <div class="panel">
+    <div class="ttl">全体進捗（自分用・日報には非表示）</div>
+    <div id="progressWidgetDetail">計算中…</div>
+  </div>
+  <button type="button" class="badge-btn" onclick="toggleProgressWidget()">
+    <span id="progressWidgetPercent">0%</span>
+  </button>
+</div>
+
+<div id="previewFullModal" class="preview-full">
+  <div class="bar">
+    <span>作業日報プレビュー（印刷イメージ）</span>
+    <button onclick="closePreviewFull()">✕ 閉じる</button>
+  </div>
+  <div class="preview-scroll" id="previewScroll">
+    <img id="previewImg" alt="作業日報プレビュー">
+  </div>
+  <div class="zoom-bar">
+    <button onclick="zoomPreview(-20)">－</button>
+    <span id="zoomLabel">100%</span>
+    <button onclick="zoomPreview(20)">＋</button>
+    <button onclick="zoomPreview(0,true)">リセット</button>
+  </div>
+</div>
 
 <script>
-(function(){
+const DEFAULT_SETTINGS = {
+  projectName:"５００ｋＶ東山口幹線鉄塔敷地および巡視路草刈工事",
+  contractor:"筒賀建設株式会社",
+  agentName:"佐々木　晃史",
+  agentPhone:"080-1920-9636",
+  companyPhone:"0826-28-1877",
+  companyFax:"0826-28-1853",
+  recipientTel:"082-810-0225",
+  recipientFax:"082-810-0222",
+  senderEmail:"ttg0117@gmail.com",
+  recipientEmail:"yasuo.kondo.hy@nw.energia.co.jp",
+  recipientOrg:"中国電力ネットワーク株式会社",
+  recipientDept:"広島北ネットワークセンター送電課",
+  recipientPerson:"近藤",
+  lineName:"東山口幹線",
+  fixedLeader:"森田　実",
+  towerRangeSpec:"1-12,126-170",
+  staffList:["田野　友博","那須　栄二","清水　元基"]
+};
 
-  // ============================================================
-  // データ（施工数量表／東山口幹線 より）
-  // towers[i] は segments[i]（直前の巡視路区間）の先にある鉄塔
-  // ============================================================
-  const towers = [
-    {no:1, area:864, note:null},
-    {no:2, area:787, note:'太陽光連絡'},
-    {no:3, area:869, note:'太陽光連絡'},
-    {no:4, area:676, note:'太陽光連絡'},
-    {no:5, area:824, note:'太陽光連絡'},
-    {no:6, area:547, note:null},
-    {no:7, area:952, note:null},
-    {no:8, area:779, note:null},
-    {no:9, area:830, note:null},
-    {no:10, area:1131, note:null},
-    {no:11, area:974, note:null},
-    {no:12, area:2164, note:'敷地法面草刈'},
-    {no:126, area:975, note:null},{no:127, area:828, note:null},{no:128, area:787, note:null},
-    {no:129, area:748, note:null},{no:130, area:827, note:null},{no:131, area:655, note:null},
-    {no:132, area:930, note:null},{no:133, area:853, note:null},{no:134, area:824, note:null},
-    {no:135, area:825, note:null},{no:136, area:687, note:null},{no:137, area:673, note:null},
-    {no:138, area:730, note:null},{no:139, area:754, note:null},{no:140, area:828, note:null},
-    {no:141, area:729, note:null},{no:142, area:931, note:null},{no:143, area:712, note:null},
-    {no:144, area:717, note:null},{no:145, area:802, note:null},{no:146, area:828, note:null},
-    {no:147, area:746, note:null},{no:148, area:989, note:null},{no:149, area:899, note:null},
-    {no:150, area:646, note:null},{no:151, area:694, note:null},{no:152, area:663, note:null},
-    {no:153, area:618, note:null},{no:154, area:675, note:null},{no:155, area:806, note:null},
-    {no:156, area:766, note:null},{no:157, area:768, note:null},
-    {no:158, area:1092, note:null},{no:159, area:910, note:null},{no:160, area:910, note:null},
-    {no:161, area:800, note:null},{no:162, area:677, note:null},{no:163, area:962, note:null},
-    {no:164, area:840, note:null},{no:165, area:675, note:null},{no:166, area:827, note:null},
-    {no:167, area:674, note:null},{no:168, area:827, note:null},{no:169, area:713, note:null},
-    {no:170, area:893, note:null},
-  ];
+function parseTowerRanges(spec){
+  const nums = [];
+  (spec||"").split(",").forEach(part=>{
+    part = part.trim();
+    if(!part) return;
+    if(part.includes("-")){
+      const [a,b] = part.split("-").map(s=>parseInt(s.trim(),10));
+      if(!isNaN(a) && !isNaN(b)){ for(let i=a;i<=b;i++) nums.push(i); }
+    } else {
+      const n = parseInt(part,10);
+      if(!isNaN(n)) nums.push(n);
+    }
+  });
+  return nums;
+}
 
-  const segments = [
-    {dist:100, dense:100, sparse:0, note:null},
-    {dist:null, dense:0, sparse:0, note:'太陽光連絡', excluded:true},
-    {dist:50, dense:50, sparse:0, note:'太陽光連絡'},
-    {dist:150, dense:150, sparse:0, note:'太陽光連絡'},
-    {dist:700, dense:470, sparse:230, note:'太陽光連絡'},
-    {dist:940, dense:630, sparse:310, note:'太陽光連絡'},
-    {dist:620, dense:420, sparse:200, note:null},
-    {dist:460, dense:310, sparse:150, note:null},
-    {dist:90, dense:90, sparse:0, note:'入口舗装道路含む'},
-    {dist:370, dense:250, sparse:120, note:null},
-    {dist:440, dense:300, sparse:140, note:null},
-    {dist:290, dense:200, sparse:90, note:null},
-    {dist:3616, dense:606, sparse:3010, note:'林道溝掃除・車両通行禁止', clean:2606},
-    {dist:600, dense:400, sparse:200, note:null},{dist:480, dense:320, sparse:160, note:null},
-    {dist:390, dense:260, sparse:130, note:null},{dist:290, dense:190, sparse:100, note:null},
-    {dist:430, dense:290, sparse:140, note:null},{dist:740, dense:500, sparse:240, note:null},
-    {dist:1040, dense:700, sparse:340, note:null},{dist:900, dense:600, sparse:300, note:null},
-    {dist:720, dense:480, sparse:240, note:null},{dist:550, dense:370, sparse:180, note:null},
-    {dist:580, dense:390, sparse:190, note:null},{dist:630, dense:420, sparse:210, note:null},
-    {dist:500, dense:340, sparse:160, note:null},{dist:410, dense:280, sparse:130, note:null},
-    {dist:320, dense:220, sparse:100, note:null},{dist:900, dense:600, sparse:300, note:null},
-    {dist:460, dense:310, sparse:150, note:null},{dist:880, dense:590, sparse:290, note:null},
-    {dist:900, dense:600, sparse:300, note:null},{dist:590, dense:400, sparse:190, note:null},
-    {dist:770, dense:670, sparse:100, note:null},{dist:640, dense:430, sparse:210, note:null},
-    {dist:620, dense:420, sparse:200, note:null},{dist:560, dense:380, sparse:180, note:null},
-    {dist:500, dense:340, sparse:160, note:null},{dist:620, dense:420, sparse:200, note:null},
-    {dist:940, dense:630, sparse:310, note:null},{dist:420, dense:280, sparse:140, note:null},
-    {dist:460, dense:310, sparse:150, note:null},{dist:440, dense:300, sparse:140, note:null},
-    {dist:480, dense:320, sparse:160, note:null},
-    {dist:430, dense:290, sparse:140, note:null},{dist:480, dense:360, sparse:120, note:null},
-    {dist:720, dense:480, sparse:240, note:null},{dist:750, dense:550, sparse:200, note:null},
-    {dist:380, dense:260, sparse:120, note:null},{dist:780, dense:520, sparse:260, note:null},
-    {dist:530, dense:360, sparse:170, note:null},{dist:540, dense:360, sparse:180, note:null},
-    {dist:650, dense:440, sparse:210, note:null},{dist:660, dense:440, sparse:220, note:null},
-    {dist:740, dense:500, sparse:240, note:null},{dist:670, dense:450, sparse:220, note:null},
-    {dist:460, dense:310, sparse:150, note:null},
-  ];
+let settings = {...DEFAULT_SETTINGS};
+let selectedMembers = [];
+let nextSelectedMembers = [];
+let weekDayOff = [false,false,false,false,false,false,false];
+let weeklyTowers = [[],[],[],[],[],[],[]];
+let towerDone = {};          // { "1": true, "2": false ... } cumulative
+let baseline = {date:"", state:{}}; // snapshot at start of current work date
+let nextPlanTowers = [];     // towers planned for tomorrow (not yet done)
+let noWorkToday = false;     // true on days with no actual work, plan-only report
 
-  const TOTAL_TOWER_AREA = towers.reduce((s,t)=>s+t.area,0);
-  const TOTAL_DIST = segments.reduce((s,g)=>s+(g.dist||0),0);
-  const N = towers.length;
-  const SEG_TOTAL = segments.filter(s=>!s.excluded).length;
-  const MAP_URL = 'https://www.google.com/maps/d/u/0/edit?mid=18e7oawl-TWoOfO8-eiQcOrRw46A&usp=sharing';
+// PDF作成に使うライブラリ(html2canvas / jsPDF)をJSから直接読み込みます。
+// <script src="..."> をHTML側に置く方式だと、CodePen等に貼り付けた際に
+// 読み込み忘れ・順番違いで「PDF作成/プレビューだけエラーになる」原因になりやすいため、
+// ここでコードから確実に読み込み、他の機能（週間予定の日付チェックなど）が
+// それに巻き込まれて止まらないようにしています。
+function loadScript(src){
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = src;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error("読み込み失敗: " + src));
+    document.head.appendChild(s);
+  });
+}
+const pdfLibsReady = Promise.all([
+  loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"),
+  loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js")
+]).then(() => true).catch(err => { console.error(err); return false; });
 
-  // 現場地図（KMZ）から取得した各鉄塔の座標と現地メモ
-  const TOWER_GEO = {
-    1:{lat:34.4134409,lon:132.2565186,note:'変電所横　やや大草'},
-    2:{lat:34.4152299,lon:132.2546357,note:'大草'},
-    3:{lat:34.4178851,lon:132.2507465,note:'車横付け可能　草低し'},
-    4:{lat:34.4192028,lon:132.2500733,note:'入口舗装　やや大草'},
-    5:{lat:34.4234188,lon:132.2478363,note:'やや大草'},
-    6:{lat:34.4284676,lon:132.2461398,note:'敷地狭め　大草'},
-    7:{lat:34.4320007,lon:132.2437218,note:'なだらか　草多い'},
-    8:{lat:34.4345713,lon:132.2408921,note:'笹多し'},
-    9:{lat:34.43584,lon:132.2395147,note:'笹多し'},
-    10:{lat:34.4387722,lon:132.2376586,note:'広い　赤鉄塔　大草'},
-    11:{lat:34.4416888,lon:132.2358455,note:'大草'},
-    12:{lat:34.4453352,lon:132.2354458,note:'中央部草少なし　全体的に大草'},
-    126:{lat:34.4444449,lon:132.2282602,note:'なだらか　中央草なし　草低め'},
-    127:{lat:34.4440811,lon:132.2234617,note:'大草'},
-    128:{lat:34.4438621,lon:132.2205542,note:'急傾斜箇所　見放し良し　大草'},
-    129:{lat:34.4436918,lon:132.2182649,note:'カヤ多し　草低め'},
-    130:{lat:34.4434971,lon:132.2158268,note:'超大草　入口階段長し'},
-    131:{lat:34.4417751,lon:132.2121871,note:'一部急箇所有り　草低め'},
-    132:{lat:34.4398152,lon:132.2074503,note:'やや大草'},
-    133:{lat:34.4382811,lon:132.2016191,note:'単独箇所　なだらか　大草'},
-    134:{lat:34.4376495,lon:132.1954662,note:'やや大草　一部急傾斜箇所有り'},
-    135:{lat:34.4368841,lon:132.1908675,note:'やや大草'},
-    136:{lat:34.436184,lon:132.1865934,note:'西島根19号隣　やや大草'},
-    137:{lat:34.4356321,lon:132.1822791,note:'笹多し'},
-    138:{lat:34.4350392,lon:132.177781,note:'なだらか　大草'},
-    139:{lat:34.4345691,lon:132.1740715,note:'中央階段石積有り　やや大草'},
-    140:{lat:34.4341897,lon:132.1715489,note:'全体的にやや急　やや大草'},
-    141:{lat:34.4338402,lon:132.1688962,note:'巡視路横断・露出石多い'},
-    142:{lat:34.4330105,lon:132.1626586,note:'笹多し　草少なめ'},
-    143:{lat:34.4322982,lon:132.1588714,note:'登り急　鉄板有り　草低め'},
-    144:{lat:34.4313879,lon:132.15414,note:'石多い・土露出'},
-    145:{lat:34.4296457,lon:132.1492195,note:'敷地内巡視路長い・低草'},
-    146:{lat:34.4282563,lon:132.1452069,note:'松成長　一部草なし'},
-    147:{lat:34.4262685,lon:132.1393155,note:'入口行き戻り・猪荒し'},
-    148:{lat:34.4244565,lon:132.1332523,note:'平坦・中央水路・重機道近い'},
-    149:{lat:34.4226876,lon:132.1273273,note:'草低め　急傾斜箇所有り'},
-    150:{lat:34.4212085,lon:132.1230667,note:'支柱低い・鉄板有り'},
-    151:{lat:34.4196995,lon:132.1186316,note:'木柵有り　1基単独　草低め'},
-    152:{lat:34.4179094,lon:132.1148202,note:'1基単独・一部急傾斜'},
-    153:{lat:34.4153892,lon:132.1094584,note:'鉄板・丘越え横断・低草'},
-    154:{lat:34.4140793,lon:132.1074414,note:'急傾斜・巡視路横断・大草'},
-    155:{lat:34.4128313,lon:132.1054351,note:'一部急傾斜箇所有り　草低め'},
-    156:{lat:34.4115833,lon:132.1034718,note:'やや急・木柵一部'},
-    157:{lat:34.4103297,lon:132.101389,note:'急傾斜・木柵・巡視路横断'},
-    158:{lat:34.4083779,lon:132.0995759,note:'法枠　非常に危険　広い　大草'},
-    159:{lat:34.4062059,lon:132.0980551,note:'鉄板・やや急'},
-    160:{lat:34.40282,lon:132.0929897,note:'巡視路急・ラス張付け'},
-    161:{lat:34.3991042,lon:132.0901841,note:'巡視路平坦・基礎やや急'},
-    162:{lat:34.3966166,lon:132.0882985,note:'なだらか　林道近し　草低め'},
-    163:{lat:34.3925663,lon:132.0853803,note:'分岐点・平坦・木柵・低草'},
-    164:{lat:34.3891865,lon:132.083213,note:'シダ多い・手前巡視路大草'},
-    165:{lat:34.3863511,lon:132.0813623,note:'なだらか　草少なめ'},
-    166:{lat:34.3828714,lon:132.0791495,note:'全体的に急　草低め'},
-    167:{lat:34.3792079,lon:132.0768106,note:'全体的にやや急　草低め'},
-    168:{lat:34.3763954,lon:132.0756304,note:'全体的にやや急　草少なめ'},
-    169:{lat:34.3720131,lon:132.0721677,note:'草多め　山口県'},
-    170:{lat:34.3693918,lon:132.0701507,note:'草低め　穴有り　敷地内県境'},
+// The original code called a Claude-artifact-only API (window.storage), which
+// doesn't exist once this file is hosted as a normal website (Netlify, GitHub
+// Pages, etc.). This shim provides the same get/set interface backed by the
+// browser's standard localStorage — this is what makes the app work once it's
+// published on the web.
+const storage = {
+  async get(key){
+    const v = localStorage.getItem(key);
+    return v === null ? null : { key, value: v };
+  },
+  async set(key, value){
+    localStorage.setItem(key, value);
+    return { key, value };
+  },
+  async delete(key){
+    localStorage.removeItem(key);
+    return { key, deleted: true };
+  }
+};
+
+// 会社休日（2026年度）
+const COMPANY_HOLIDAYS = new Set(["2026-04-11","2026-04-25","2026-04-29","2026-05-04","2026-05-05","2026-05-06","2026-05-23","2026-06-13","2026-06-27","2026-07-11","2026-07-20","2026-07-25","2026-08-11","2026-08-13","2026-08-14","2026-08-15","2026-08-22","2026-09-12","2026-09-21","2026-09-22","2026-09-23","2026-09-26","2026-10-10","2026-10-12","2026-10-24","2026-11-03","2026-11-14","2026-11-23","2026-11-28","2026-12-12","2026-12-29","2026-12-30","2026-12-31","2027-01-01","2027-01-02","2027-01-04","2027-01-05","2027-01-11","2027-01-23","2027-02-11","2027-02-13","2027-02-23","2027-02-27","2027-03-06","2027-03-20","2027-03-22"]);
+
+// ===== 施工数量表（草刈数量表.pdf）より =====
+// 鉄塔敷地 草刈面積(㎡)：塔番号ごと。合計47,110㎡・57基（PDFの「合計」欄と一致）
+const SITE_AREA = {1:864,2:787,3:869,4:676,5:824,6:547,7:952,8:779,9:830,10:1131,11:974,12:2164,126:975,127:828,128:787,129:748,130:827,131:655,132:930,133:853,134:824,135:825,136:687,137:673,138:730,139:754,140:828,141:729,142:931,143:712,144:717,145:802,146:828,147:746,148:989,149:899,150:646,151:694,152:663,153:618,154:675,155:806,156:766,157:768,158:1092,159:910,160:910,161:800,162:677,163:962,164:840,165:675,166:827,167:674,168:827,169:713,170:893};
+// 巡視路 草刈面積(㎡)：区間(f→t)ごと。f=null はトラス～1号の区間。
+// 12→126 のみ x（清掃2,606㎡＝林道溝掃除）を別枠で保持。13～125号は欠番。
+// 合計34,376㎡（区間） + 2,606㎡（清掃）＝PDFの各小計と一致。
+const PATROL_SEGMENTS = [{f:null,t:1,a:100},{f:157,t:158,a:430},{f:1,t:2,a:0},{f:158,t:159,a:480},{f:2,t:3,a:50},{f:159,t:160,a:720},{f:3,t:4,a:150},{f:160,t:161,a:750},{f:4,t:5,a:700},{f:161,t:162,a:380},{f:5,t:6,a:940},{f:162,t:163,a:780},{f:6,t:7,a:620},{f:163,t:164,a:530},{f:7,t:8,a:460},{f:164,t:165,a:540},{f:8,t:9,a:90},{f:165,t:166,a:650},{f:9,t:10,a:370},{f:166,t:167,a:660},{f:10,t:11,a:440},{f:167,t:168,a:740},{f:11,t:12,a:290},{f:168,t:169,a:670},{f:12,t:126,a:3616,x:2606},{f:169,t:170,a:460},{f:126,t:127,a:600},{f:127,t:128,a:480},{f:128,t:129,a:390},{f:129,t:130,a:290},{f:130,t:131,a:430},{f:131,t:132,a:740},{f:132,t:133,a:1040},{f:133,t:134,a:900},{f:134,t:135,a:720},{f:135,t:136,a:550},{f:136,t:137,a:580},{f:137,t:138,a:630},{f:138,t:139,a:500},{f:139,t:140,a:410},{f:140,t:141,a:320},{f:141,t:142,a:900},{f:142,t:143,a:460},{f:143,t:144,a:880},{f:144,t:145,a:900},{f:145,t:146,a:590},{f:146,t:147,a:770},{f:147,t:148,a:640},{f:148,t:149,a:620},{f:149,t:150,a:560},{f:150,t:151,a:500},{f:151,t:152,a:620},{f:152,t:153,a:940},{f:153,t:154,a:420},{f:154,t:155,a:460},{f:155,t:156,a:440},{f:156,t:157,a:480}];
+
+function computeOverallProgress(){
+  let siteDone = 0, siteTotal = 0;
+  for(const k in SITE_AREA){
+    const n = parseInt(k,10);
+    siteTotal += SITE_AREA[k];
+    if(towerDone[n]) siteDone += SITE_AREA[k];
+  }
+  let patrolDone = 0, patrolTotal = 0;
+  PATROL_SEGMENTS.forEach(seg=>{
+    patrolTotal += seg.a + (seg.x||0);
+    // 通常区間：両端の鉄塔が完了していれば区間終了とみなす（トラス側はf=nullなのでtのみで判定）
+    const bothDone = (seg.f===null ? true : !!towerDone[seg.f]) && !!towerDone[seg.t];
+    if(bothDone) patrolDone += seg.a;
+    // 12→126の特例：12号が完了していれば清掃2,606㎡のみ終了とみなす（13～125号欠番のため）
+    if(seg.x){
+      if(towerDone[seg.f]) patrolDone += seg.x;
+    }
+  });
+  const total = siteTotal + patrolTotal;
+  const done = siteDone + patrolDone;
+  return {
+    percent: total ? Math.round(done/total*1000)/10 : 0,
+    done, total,
+    sitePercent: siteTotal ? Math.round(siteDone/siteTotal*1000)/10 : 0,
+    siteDone, siteTotal,
+    patrolPercent: patrolTotal ? Math.round(patrolDone/patrolTotal*1000)/10 : 0,
+    patrolDone, patrolTotal
   };
-
-
-  function fromLabel(i){ return i===0 ? 'トラス' : String(towers[i-1].no); }
-
-  // ============================================================
-  // 状態管理
-  // ============================================================
-  const DEFAULT_STATE = { towers:{}, segs:{}, towerBlocked:{}, towerReason:{}, segBlocked:{}, segReason:{}, updatedAt:null };
-  let state = Object.assign({}, DEFAULT_STATE);
-  let filter = 'all'; // all | pending | done | blocked
-  const STORAGE_KEY = 'higashi_yamaguchi_kusakari_v1';
-
-  // Claude.ai内であれば window.storage が使え、全員で進捗を共有できる（通信が必要）。
-  // ファイルとして保存しブラウザで直接開いた場合は window.storage が無いため、
-  // その端末のローカル保存（完全オフライン・その端末のみ）に切り替える。
-  const hasCloud = (typeof window !== 'undefined') && !!window.storage;
-  const syncMode = hasCloud ? 'cloud' : 'local';
-  let syncOk = true;
-
-  function withTimeout(promise, ms){
-    return new Promise((resolve)=>{
-      let settled = false;
-      const timer = setTimeout(()=>{ if(!settled){ settled=true; resolve({timedOut:true}); } }, ms);
-      promise.then(
-        (v)=>{ if(!settled){ settled=true; clearTimeout(timer); resolve({value:v}); } },
-        (e)=>{ if(!settled){ settled=true; clearTimeout(timer); resolve({error:e}); } }
-      );
-    });
+}
+function renderProgressWidget(){
+  const p = computeOverallProgress();
+  $("progressWidgetPercent").textContent = p.percent + "%";
+  $("progressWidgetDetail").innerHTML =
+    `全体：${p.done.toLocaleString()} / ${p.total.toLocaleString()}㎡<br>`+
+    `敷地：${p.sitePercent}%（${p.siteDone.toLocaleString()}/${p.siteTotal.toLocaleString()}㎡）<br>`+
+    `巡視路：${p.patrolPercent}%（${p.patrolDone.toLocaleString()}/${p.patrolTotal.toLocaleString()}㎡）`;
+}
+function toggleProgressWidget(){
+  $("progressWidget").classList.toggle("open");
+}
+function isoDate(dt){
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getDate()).padStart(2,"0")}`;
+}
+function isRedDay(dt){
+  return dt.getDay() === 0 || COMPANY_HOLIDAYS.has(isoDate(dt));
+}
+function suggestedWeekStart(workDateStr){
+  const d = new Date(workDateStr+"T00:00:00");
+  const thisMonday = mondayOf(workDateStr);
+  if(d.getDay() === 4){ // Thursday: next week's plan is due today
+    const nm = new Date(thisMonday+"T00:00:00");
+    nm.setDate(nm.getDate()+7);
+    return isoDate(nm);
   }
+  return thisMonday;
+}
+// If it's Thursday and the saved week-start is still this week (or earlier),
+// it hasn't been advanced yet — auto-advance it. If the person already pushed
+// it further out (e.g. for a long holiday), leave their choice alone.
+function autoAdvanceIfStale(workDateStr, currentWeekStart){
+  const d = new Date(workDateStr+"T00:00:00");
+  if(d.getDay() !== 4) return currentWeekStart;
+  const thisMonday = mondayOf(workDateStr);
+  if(!currentWeekStart || currentWeekStart <= thisMonday){
+    return suggestedWeekStart(workDateStr);
+  }
+  return currentWeekStart;
+}
 
-  async function loadState(){
-    if(syncMode === 'cloud'){
-      const r = await withTimeout(window.storage.get(STORAGE_KEY, true), 7000);
-      if(r && r.value && r.value.value){
-        try{ state = Object.assign({}, DEFAULT_STATE, JSON.parse(r.value.value)); }catch(e){}
-        syncOk = true;
-      } else if(r && r.timedOut){
-        syncOk = false; // 通信待ちタイムアウト：ひとまずローカルの初期状態で表示を続ける
+const $ = id => document.getElementById(id);
+
+function todayStr(){ return isoDate(new Date()); }
+function mondayOf(d){
+  const date = new Date(d+"T00:00:00"); const day = date.getDay();
+  const diff = (day===0 ? -6 : 1-day);
+  date.setDate(date.getDate()+diff);
+  return isoDate(date);
+}
+function fmtJP(dateStr){
+  if(!dateStr) return "";
+  const d = new Date(dateStr+"T00:00:00");
+  const w = ["日","月","火","水","木","金","土"][d.getDay()];
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${w}）`;
+}
+function formatTowerList(nums){
+  if(!nums.length) return "";
+  const sorted = [...nums].sort((a,b)=>a-b);
+  const groups = [];
+  let start = sorted[0], prev = sorted[0];
+  for(let i=1;i<sorted.length;i++){
+    if(sorted[i] === prev+1){ prev = sorted[i]; continue; }
+    groups.push(start===prev ? `${start}` : `${start}～${prev}`);
+    start = prev = sorted[i];
+  }
+  groups.push(start===prev ? `${start}` : `${start}～${prev}`);
+  return "№" + groups.join(", ");
+}
+function computeGroupLines(nums){
+  if(!nums.length) return [];
+  const sorted = [...nums].sort((a,b)=>a-b);
+  const groups = [];
+  let start = sorted[0], prev = sorted[0];
+  for(let i=1;i<sorted.length;i++){
+    if(sorted[i] === prev+1){ prev = sorted[i]; continue; }
+    groups.push(start===prev ? `№${start}` : `№${start}～${prev}`);
+    start = prev = sorted[i];
+  }
+  groups.push(start===prev ? `№${start}` : `№${start}～${prev}`);
+  return groups;
+}
+
+async function loadAll(){
+  try{
+    const s = await storage.get('settings');
+    if(s && s.value) settings = {...DEFAULT_SETTINGS, ...JSON.parse(s.value)};
+  }catch(e){}
+  try{
+    const t = await storage.get('towers');
+    if(t && t.value) towerDone = JSON.parse(t.value);
+  }catch(e){}
+  try{
+    const b = await storage.get('towersBaseline');
+    if(b && b.value) baseline = JSON.parse(b.value);
+  }catch(e){}
+  try{
+    const d = await storage.get('draft:current');
+    if(d && d.value){
+      const draft = JSON.parse(d.value);
+      // 作業日・送信日は毎回「当日」を自動選択する（前回保存した日付は使わない）。
+      // ただし画面上でいつでも手動で変更は可能。
+      $("workDate").value = todayStr();
+      selectedMembers = (draft.members || []).filter(n => n !== settings.fixedLeader);
+      nextSelectedMembers = (draft.nextMembers || []).filter(n => n !== settings.fixedLeader);
+      nextPlanTowers = draft.nextPlanTowers || [];
+      $("weekStart").value = autoAdvanceIfStale($("workDate").value, draft.weekStart || mondayOf(todayStr()));
+      weekDayOff = draft.weekDayOff || [false,false,false,false,false,false,false];
+      weeklyTowers = draft.weeklyTowers || [[],[],[],[],[],[],[]];
+      noWorkToday = draft.noWorkToday || false;
+      if(draft.nextWorkDate){
+        $("nextWorkDate").value = draft.nextWorkDate;
       } else {
-        syncOk = true; // 未保存（キー無し）は正常な初回状態
+        const nd = new Date($("workDate").value+"T00:00:00"); nd.setDate(nd.getDate()+1);
+        $("nextWorkDate").value = isoDate(nd);
       }
+      $("sendDateInput").value = todayStr();
     } else {
-      try{
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if(raw){ state = Object.assign({}, DEFAULT_STATE, JSON.parse(raw)); }
-      }catch(e){ /* ignore */ }
+      $("workDate").value = todayStr();
+      $("weekStart").value = suggestedWeekStart(todayStr());
+      const nd = new Date(todayStr()+"T00:00:00"); nd.setDate(nd.getDate()+1);
+      $("nextWorkDate").value = isoDate(nd);
+      $("sendDateInput").value = todayStr();
+    }
+  }catch(e){
+    $("workDate").value = todayStr();
+    $("weekStart").value = suggestedWeekStart(todayStr());
+    const nd = new Date(todayStr()+"T00:00:00"); nd.setDate(nd.getDate()+1);
+    $("nextWorkDate").value = isoDate(nd);
+    $("sendDateInput").value = todayStr();
+  }
+  $("noWorkToday").checked = noWorkToday;
+  $("todayWorkFields").style.display = noWorkToday ? "none" : "";
+  $("todayTeamFields").style.display = noWorkToday ? "none" : "";
+  $("todayNoWorkNote").style.display = noWorkToday ? "" : "none";
+  applyDateGuards();
+
+  ensureBaseline();
+  renderAll();
+}
+
+function ensureBaseline(){
+  const d = $("workDate").value;
+  if(baseline.date !== d){
+    baseline = {date:d, state:{...towerDone}};
+    saveBaseline();
+  }
+}
+function onDateChange(){
+  ensureBaseline();
+  $("weekStart").value = autoAdvanceIfStale($("workDate").value, $("weekStart").value);
+  const nd = new Date($("workDate").value+"T00:00:00"); nd.setDate(nd.getDate()+1);
+  $("nextWorkDate").value = isoDate(nd);
+  $("sendDateInput").value = $("workDate").value;
+  applyDateGuards();
+  saveDraft(false);
+  renderAll();
+}
+function onSendDateChange(){
+  saveDraft(false);
+  renderDateWarningBanner();
+  updatePreviewTable();
+}
+function applyDateGuards(){
+  // 実績日は未来日を選べないようにする（作業がまだ発生していないため）
+  $("workDate").max = todayStr();
+  // 予定日は実績日より前を選べないようにする
+  $("nextWorkDate").min = $("workDate").value;
+}
+function onNextWorkDateChange(){
+  saveDraft(false);
+  renderDateWarningBanner();
+  updatePreviewTable();
+}
+function onNoWorkToggle(){
+  noWorkToday = $("noWorkToday").checked;
+  $("todayWorkFields").style.display = noWorkToday ? "none" : "";
+  $("todayTeamFields").style.display = noWorkToday ? "none" : "";
+  $("todayNoWorkNote").style.display = noWorkToday ? "" : "none";
+  if(noWorkToday){
+    // clear any towers marked today so they don't get counted as done
+    todaysNewTowers().forEach(i => { towerDone[i] = false; });
+    saveTowers();
+  }
+  saveDraft(false);
+  renderAll();
+}
+
+function renderAll(){
+  $("subtitleLine").textContent = settings.projectName;
+  renderMemberChips();
+  renderNextMemberChips();
+  renderTowerGrid();
+  renderTodayPicker();
+  renderTodayChips();
+  renderNextPicker();
+  renderNextChips();
+  updateTeamDisplays();
+  renderWeekLabels();
+  renderSendInfo();
+  renderThuBanner();
+  renderDateWarningBanner();
+  renderProgressWidget();
+  updatePreviewTable();
+}
+
+function updateTeamDisplays(){
+  const roster = [settings.fixedLeader, ...selectedMembers.filter(n => n !== settings.fixedLeader)];
+  const nextRoster = [settings.fixedLeader, ...nextSelectedMembers.filter(n => n !== settings.fixedLeader)];
+  $("teamCountDisplay").textContent = `${roster.length}名`;
+  $("nextTeamCountDisplay").textContent = `${nextRoster.length}名`;
+}
+
+function renderSendInfo(){
+  $("sendInfoSummary").innerHTML =
+    `<b>${settings.recipientOrg}</b><br>${settings.recipientDept}（担当者　${settings.recipientPerson}様）<br>宛先メール：${settings.recipientEmail}<br>送信元：${settings.senderEmail}`;
+}
+function renderThuBanner(){
+  const isThu = new Date().getDay() === 4;
+  if(!isThu){ $("thuBanner").innerHTML = ""; return; }
+  const weeklyEmpty = weeklyTowers.every(arr => arr.length===0) && weekDayOff.every(v => !v);
+  $("thuBanner").innerHTML = weeklyEmpty
+    ? `<div class="banner"><div>⚠️</div><div><b>本日は木曜日です。来週の予定が未入力です。</b>「来週の作業予定」欄を入力してから送信してください。</div></div>`
+    : `<div class="banner"><div>📅</div><div><b>本日は木曜日です。</b>来週の作業予定の内容に間違いがないか確認してから送信してください。</div></div>`;
+}
+function dateConsistencyIssues(){
+  const issues = [];
+  const sendDate = $("sendDateInput").value || todayStr();
+  const wd = $("workDate").value;
+  const nwd = $("nextWorkDate").value;
+  if(sendDate === nwd) issues.push({text:"送信日と作業予定日が同じ日付になっています。", target:"nextWorkDate"});
+  if(nwd < sendDate) issues.push({text:"作業予定日が送信日より過去の日付になっています。", target:"nextWorkDate"});
+  if(!noWorkToday){
+    // 実績なしの日は「作業実績日」が印字されないため、これらのチェックは意味を持たない
+    if(wd < sendDate) issues.push({text:"作業実績日が送信日より過去の日付になっています。", target:"workDate"});
+    if(wd === nwd) issues.push({text:"作業実績日と作業予定日が同じ日付になっています。", target:"nextWorkDate"});
+    if(nwd < wd) issues.push({text:"作業予定日が作業実績日より過去の日付になっています。", target:"nextWorkDate"});
+  }
+  return issues;
+}
+function jumpToField(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const target = el.closest(".card") || el;
+  el.scrollIntoView({behavior:"smooth", block:"center"});
+  target.classList.add("field-flash");
+  setTimeout(()=>target.classList.remove("field-flash"), 2600);
+  closeWarningModal();
+}
+function renderDateWarningBanner(){
+  const issues = dateConsistencyIssues();
+  const box = $("dateWarningBanner");
+  if(!issues.length){ box.innerHTML = ""; return; }
+  box.innerHTML = `<div class="banner"><div>⚠️</div><div><b>日付に矛盾があります。タップした項目に移動します。</b><ul style="margin:4px 0 0; padding-left:18px;">${issues.map(t=>`<li><a href="javascript:void(0)" onclick="jumpToField('${t.target}')" style="color:var(--safety-dark); text-decoration:underline; font-weight:700;">${t.text}</a></li>`).join("")}</ul></div></div>`;
+}
+function validateIssues(){
+  const issues = [];
+  if(!noWorkToday && todaysNewTowers().length === 0) issues.push({text:"本日完了した鉄塔が選択されていません（本日の作業実績）。「実績なし」の日であれば、上のチェックボックスにチェックしてください。", target:"towerPickToday"});
+  if(nextPlanTowers.length === 0) issues.push({text:"翌日の作業予定（鉄塔）が選択されていません。", target:"towerPickNext"});
+  const isThu = new Date().getDay() === 4;
+  const weeklyEmpty = weeklyTowers.every(arr => arr.length===0) && weekDayOff.every(v => !v);
+  if(isThu && weeklyEmpty) issues.push({text:"本日は木曜日です。来週の作業予定（週間予定欄）が未入力です。", target:"weekGrid"});
+  issues.push(...dateConsistencyIssues());
+  return issues;
+}
+function renderMemberChips(){
+  const box = $("memberChips"); box.innerHTML = "";
+  settings.staffList.filter(name => name !== settings.fixedLeader).forEach(name=>{
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "chip" + (selectedMembers.includes(name) ? " on" : "");
+    chip.textContent = name;
+    chip.onclick = () => {
+      if(selectedMembers.includes(name)) selectedMembers = selectedMembers.filter(n=>n!==name);
+      else selectedMembers.push(name);
+      renderMemberChips(); updateTeamDisplays(); renderNextPicker(); updatePreviewTable();
+    };
+    box.appendChild(chip);
+  });
+}
+function addMember(){
+  const input = $("newMemberName");
+  const name = input.value.trim();
+  if(!name) return;
+  if(name === settings.fixedLeader){
+    showToast("森田　実さんは作業班長として既に登録されています");
+    input.value = "";
+    return;
+  }
+  if(!settings.staffList.includes(name)) settings.staffList.push(name);
+  if(!selectedMembers.includes(name)) selectedMembers.push(name);
+  input.value = "";
+  renderMemberChips(); saveSettings(); updateTeamDisplays(); renderNextPicker(); updatePreviewTable();
+}
+
+function renderNextMemberChips(){
+  const box = $("nextMemberChips"); box.innerHTML = "";
+  settings.staffList.filter(name => name !== settings.fixedLeader).forEach(name=>{
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "chip" + (nextSelectedMembers.includes(name) ? " on" : "");
+    chip.textContent = name;
+    chip.onclick = () => {
+      if(nextSelectedMembers.includes(name)) nextSelectedMembers = nextSelectedMembers.filter(n=>n!==name);
+      else nextSelectedMembers.push(name);
+      renderNextMemberChips(); updateTeamDisplays(); saveDraft(false); updatePreviewTable();
+    };
+    box.appendChild(chip);
+  });
+}
+function addNextMember(){
+  const input = $("newNextMemberName");
+  const name = input.value.trim();
+  if(!name) return;
+  if(name === settings.fixedLeader){
+    showToast("森田　実さんは作業班長として既に登録されています");
+    input.value = "";
+    return;
+  }
+  if(!settings.staffList.includes(name)) settings.staffList.push(name);
+  if(!nextSelectedMembers.includes(name)) nextSelectedMembers.push(name);
+  input.value = "";
+  renderNextMemberChips(); saveSettings(); updateTeamDisplays(); saveDraft(false); updatePreviewTable();
+}
+
+function validTowers(){ return parseTowerRanges(settings.towerRangeSpec || "1-12,126-170"); }
+
+function renderTowerGrid(){
+  const grid = $("towerGrid"); grid.innerHTML = "";
+  const list = validTowers();
+  list.forEach(i=>{
+    const cell = document.createElement("div");
+    const isDone = !!towerDone[i];
+    const isToday = isDone && !baseline.state[i];
+    cell.className = "tower-btn" + (isDone ? " done" : "") + (isToday ? " today" : "");
+    cell.textContent = i;
+    grid.appendChild(cell);
+  });
+  const total = list.length;
+  const done = list.filter(i=>towerDone[i]).length;
+  $("progressLabel").textContent = `${done}/${total}基`;
+  $("towerTotalLabel").textContent = total;
+  renderProgressWidget();
+}
+
+function todaysNewTowers(){
+  return validTowers().filter(i=>towerDone[i] && !baseline.state[i]);
+}
+function autoFillRangeFromTowers(){
+  $("workRange").value = formatTowerList(todaysNewTowers());
+}
+function renderTodayPicker(){
+  const sel = $("towerPickToday");
+  const remaining = validTowers().filter(i=>!towerDone[i]);
+  sel.innerHTML = remaining.map(i=>`<option value="${i}">№${i}</option>`).join("");
+}
+function pickTodayAdd(){
+  const v = parseInt($("towerPickToday").value, 10);
+  if(isNaN(v)) return;
+  towerDone[v] = true;
+  saveTowers();
+  renderTowerGrid();
+  renderTodayPicker();
+  renderTodayChips();
+  renderNextPicker();
+  renderWeekLabels();
+  autoFillRangeFromTowers();
+  updatePreviewTable();
+}
+function renderTodayChips(){
+  const box = $("todayChips");
+  const todays = todaysNewTowers();
+  box.innerHTML = todays.map(i => `
+    <span class="rm-chip">№${i}<button type="button" onclick="removeTodayTower(${i})">×</button></span>
+  `).join("") || `<span class="hint">まだ選択されていません</span>`;
+}
+function removeTodayTower(i){
+  towerDone[i] = false;
+  saveTowers();
+  renderTowerGrid();
+  renderTodayPicker();
+  renderTodayChips();
+  renderNextPicker();
+  renderWeekLabels();
+  autoFillRangeFromTowers();
+  updatePreviewTable();
+}
+
+function renderNextPicker(){
+  const sel = $("towerPickNext");
+  const remaining = validTowers().filter(i=>!towerDone[i] && !nextPlanTowers.includes(i));
+  sel.innerHTML = remaining.map(i=>`<option value="${i}">№${i}</option>`).join("");
+}
+function pickNextAdd(){
+  const v = parseInt($("towerPickNext").value, 10);
+  if(isNaN(v)) return;
+  nextPlanTowers.push(v);
+  saveDraft(false);
+  renderNextPicker();
+  renderNextChips();
+  renderWeekLabels();
+  updatePreviewTable();
+}
+function renderNextChips(){
+  const box = $("nextChips");
+  $("nextRange").value = formatTowerList(nextPlanTowers);
+  box.innerHTML = nextPlanTowers.map(i => `
+    <span class="rm-chip">№${i}<button type="button" onclick="removeNextTower(${i})">×</button></span>
+  `).join("") || `<span class="hint">まだ選択されていません</span>`;
+}
+function removeNextTower(i){
+  nextPlanTowers = nextPlanTowers.filter(n=>n!==i);
+  saveDraft(false);
+  renderNextPicker();
+  renderNextChips();
+  renderWeekLabels();
+  updatePreviewTable();
+}
+
+function usedElsewhere(){
+  const used = new Set();
+  validTowers().forEach(i=>{ if(towerDone[i]) used.add(i); });
+  weeklyTowers.forEach(arr=>arr.forEach(i=>used.add(i)));
+  return used;
+}
+function onWeekStartChange(){
+  const v = $("weekStart").value;
+  if(v){
+    const d = new Date(v+"T00:00:00");
+    if(d.getDay() !== 1){
+      const corrected = mondayOf(v);
+      $("weekStart").value = corrected;
+      showToast("週の開始日は月曜日のみ選択できます。自動的に月曜日に調整しました");
     }
   }
+  saveDraft(false);
+  renderWeekLabels();
+  updatePreviewTable();
+}
+function toggleAllWeekOff(){
+  const allOff = weekDayOff.every(v => v);
+  for(let i=0;i<7;i++){
+    weekDayOff[i] = !allOff;
+    if(!allOff) weeklyTowers[i] = [];
+  }
+  saveDraft(false);
+  renderWeekLabels();
+  updatePreviewTable();
+}
+function renderWeekLabels(){
+  const start = $("weekStart").value || mondayOf(todayStr());
+  const grid = $("weekGrid"); grid.innerHTML = "";
+  const labels = ["月","火","水","木","金","土","日"];
+  const allOff = weekDayOff.every(v => v);
+  $("allOffBtn").textContent = allOff ? "休工をすべて解除する" : "この週はすべて休工にする（お盆休みなど）";
+  const used = usedElsewhere();
+  for(let i=0;i<7;i++){
+    const d = new Date(start+"T00:00:00"); d.setDate(d.getDate()+i);
+    const mmdd = `${d.getMonth()+1}/${d.getDate()}`;
+    const col = document.createElement("div");
+    col.className = "daycol";
+    const dnameClass = isRedDay(d) ? "sun" : (i===5 ? "sat" : "");
+    const options = validTowers().filter(n => !used.has(n));
+    const chips = weeklyTowers[i].map(n => `<span class="rm-chip" style="font-size:11px; padding:4px 6px 4px 9px;">№${n}<button type="button" onclick="removeWeekTower(${i},${n})">×</button></span>`).join("");
+    col.innerHTML = `
+      <div class="dname ${dnameClass}">${labels[i]}<br>${mmdd}</div>
+      ${weekDayOff[i] ? `<div class="hint">休工</div>` : `
+        <select data-idx="${i}" style="font-size:11px; padding:4px;">${options.map(n=>`<option value="${n}">№${n}</option>`).join("")}</select>
+        <button type="button" class="off-btn" onclick="pickWeekAdd(${i})" style="margin-top:4px;">＋追加</button>
+        <div style="margin-top:4px;">${chips}</div>
+      `}
+      <button type="button" class="off-btn ${weekDayOff[i]?"on":""}" data-offidx="${i}">${weekDayOff[i]?"休工中":"休工?"}</button>
+    `;
+    grid.appendChild(col);
+  }
+  grid.querySelectorAll(".off-btn[data-offidx]").forEach(b=>{
+    b.addEventListener("click", e=>{
+      const idx = e.target.dataset.offidx;
+      weekDayOff[idx] = !weekDayOff[idx];
+      if(weekDayOff[idx]) weeklyTowers[idx] = [];
+      renderWeekLabels(); updatePreviewTable();
+    });
+  });
+}
+function pickWeekAdd(dayIdx){
+  const sel = document.querySelector(`#weekGrid select[data-idx="${dayIdx}"]`);
+  if(!sel) return;
+  const v = parseInt(sel.value, 10);
+  if(isNaN(v)) return;
+  weeklyTowers[dayIdx].push(v);
+  saveDraft(false);
+  renderWeekLabels();
+  renderTodayPicker();
+  renderNextPicker();
+  updatePreviewTable();
+}
+function removeWeekTower(dayIdx, num){
+  weeklyTowers[dayIdx] = weeklyTowers[dayIdx].filter(n=>n!==num);
+  saveDraft(false);
+  renderWeekLabels();
+  renderTodayPicker();
+  renderNextPicker();
+  updatePreviewTable();
+}
 
-  async function saveState(){
-    state.updatedAt = new Date().toISOString();
-    if(syncMode === 'cloud'){
-      const r = await withTimeout(window.storage.set(STORAGE_KEY, JSON.stringify(state), true), 7000);
-      syncOk = !!(r && r.value);
-    } else {
-      try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); syncOk = true; }catch(e){ syncOk = false; }
+function collectDraft(){
+  return {
+    workDate: $("workDate").value,
+    sendDate: $("sendDateInput").value,
+    workRange: formatTowerList(todaysNewTowers()),
+    members: selectedMembers,
+    nextMembers: nextSelectedMembers,
+    nextRange: formatTowerList(nextPlanTowers),
+    nextPlanTowers: nextPlanTowers,
+    nextWorkDate: $("nextWorkDate").value,
+    weekStart: $("weekStart").value,
+    weekDayOff, weeklyTowers,
+    noWorkToday
+  };
+}
+async function saveDraft(showMsg){
+  try{ await storage.set('draft:current', JSON.stringify(collectDraft())); if(showMsg) showToast("一時保存しました"); }
+  catch(e){ if(showMsg) showToast("保存に失敗しました"); }
+}
+async function saveSettings(){ try{ await storage.set('settings', JSON.stringify(settings)); }catch(e){} }
+async function saveTowers(){ try{ await storage.set('towers', JSON.stringify(towerDone)); }catch(e){} }
+async function saveBaseline(){ try{ await storage.set('towersBaseline', JSON.stringify(baseline)); }catch(e){} }
+
+function showToast(msg){
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"), 2000);
+}
+
+function updatePreviewTable(){
+  const d = collectDraft();
+  const list = validTowers();
+  const total = list.length;
+  const done = list.filter(i=>towerDone[i]).length;
+  const nextDateStr = d.nextWorkDate || d.workDate;
+
+  const labels = ["月","火","水","木","金","土","日"];
+  const start = new Date((d.weekStart||mondayOf(todayStr()))+"T00:00:00");
+  let weekDateCells = "", weekDayCells = "", weekContentCells = "";
+  for(let i=0;i<7;i++){
+    const dt = new Date(start); dt.setDate(dt.getDate()+i);
+    const isRed = isRedDay(dt);
+    const redStyle = isRed ? ' style="color:#c0272d;"' : '';
+    weekDateCells += `<td class="center"${redStyle}>${dt.getMonth()+1}/${dt.getDate()}</td>`;
+    weekDayCells += `<td class="center"${redStyle}>${labels[i]}</td>`;
+    weekContentCells += `<td class="center" rowspan="2" style="vertical-align:middle;">${d.weekDayOff[i] ? "休工" : formatTowerList(weeklyTowers[i])}</td>`;
+  }
+
+  // team roster: fixed leader first, then added members — now independent per side
+  const roster = [settings.fixedLeader, ...d.members.filter(n => n !== settings.fixedLeader)];
+  const nextRoster = [settings.fixedLeader, ...d.nextMembers.filter(n => n !== settings.fixedLeader)];
+  const leftRoster = d.noWorkToday ? [] : roster;
+  const leftTeamCount = d.noWorkToday ? "" : `${roster.length}名`;
+  const rightTeamCount = `${nextRoster.length}名`;
+  const todayGroups = computeGroupLines(todaysNewTowers());
+  const nextGroups = computeGroupLines(nextPlanTowers);
+  const CONTENT_ROWS = 13; // Excel rows 10–22
+
+  // Left block (A,B,C merged, rows10–22): subtitle + line name + range groups, stacked
+  let leftLines = ["・鉄塔敷地・巡視路"];
+  if(d.noWorkToday){
+    leftLines.push("本日は作業なし（予定のみ報告）");
+  } else if(todayGroups.length){
+    leftLines.push(`${settings.lineName}　${todayGroups[0]}`);
+    for(let g=1; g<todayGroups.length; g++) leftLines.push(todayGroups[g]);
+  } else {
+    leftLines.push(settings.lineName);
+  }
+  const leftContent = leftLines.join("<br>");
+
+  // Right block (F,G,H merged, rows10–22): next-day line name + range groups
+  let rightLines = ["・鉄塔敷地・巡視路"];
+  if(nextGroups.length){
+    rightLines.push(`${settings.lineName}　${nextGroups[0]}`);
+    for(let g=1; g<nextGroups.length; g++) rightLines.push(nextGroups[g]);
+  } else {
+    rightLines.push(settings.lineName);
+  }
+  const rightContent = rightLines.join("<br>");
+
+  // D/E (and mirrored I/J) are a literal 13-row grid: row0 = leader (+label), rows1+ = members, rest blank
+  let contentRows = `<tr class="rh">
+    <td rowspan="${CONTENT_ROWS}" colspan="3" class="wrap" style="vertical-align:top; text-align:left;">${leftContent}</td>
+    <td class="label">${leftRoster.length ? "作業班長" : ""}</td><td class="nowrap">${leftRoster[0]||""}</td>
+    <td rowspan="${CONTENT_ROWS}" colspan="3" class="wrap" style="vertical-align:top; text-align:left;">${rightContent}</td>
+    <td class="label">作業班長</td><td class="nowrap">${nextRoster[0]||""}</td>
+  </tr>`;
+  for(let r=1; r<CONTENT_ROWS; r++){
+    contentRows += `<tr class="rh">
+      <td></td><td class="nowrap">${leftRoster[r]||""}</td>
+      <td></td><td class="nowrap">${nextRoster[r]||""}</td>
+    </tr>`;
+  }
+
+  const WEEK_LABEL_ROWSPAN = 7; // rows23–29: header rows + content row + 3 blank rows below
+
+  $("excelSheet").innerHTML = `
+    <colgroup>
+      <col style="width:15.9%"><col style="width:9.34%"><col style="width:9.34%"><col style="width:9.34%"><col style="width:9.34%">
+      <col style="width:9.34%"><col style="width:9.34%"><col style="width:9.34%"><col style="width:9.34%"><col style="width:9.34%">
+    </colgroup>
+    <tr><td colspan="10" class="title">草　刈　工　事　　　作　業　日　報（週　報）</td></tr>
+    <tr>
+      <td class="label" rowspan="2">件　　　名</td><td colspan="4" rowspan="2" style="font-size:8.3px; white-space:nowrap;">${settings.projectName}</td>
+      <td class="label">送　信　先</td><td colspan="4" class="wrap">${settings.recipientOrg}　${settings.recipientDept}（担当者　${settings.recipientPerson}様）</td>
+    </tr>
+    <tr>
+      <td></td><td colspan="2" class="center" style="font-size:7.3px;">TEL ${settings.recipientTel}</td><td colspan="2" class="center" style="font-size:7.3px;">FAX ${settings.recipientFax}</td>
+    </tr>
+    <tr>
+      <td class="label">工事請負者名</td><td colspan="4">${settings.contractor}</td>
+      <td class="label">送　信　日</td><td colspan="4" class="center">${fmtJP(d.sendDate)}</td>
+    </tr>
+    <tr>
+      <td class="label">現場代理人</td><td colspan="4">${settings.agentName}<br>現場代理人携帯　${settings.agentPhone}</td>
+      <td class="label">送　信　者</td><td colspan="4">${settings.contractor}　${settings.agentName}<br>会社電話　${settings.companyPhone}　FAX　${settings.companyFax}</td>
+    </tr>
+    <tr>
+      <td colspan="5" class="subhead">〈　作　業　実　績　〉</td>
+      <td colspan="5" class="subhead">〈　作　業　予　定　〉</td>
+    </tr>
+    <tr><td colspan="5" class="center">${d.noWorkToday ? "" : fmtJP(d.workDate)}</td><td colspan="5" class="center">${fmtJP(nextDateStr)}</td></tr>
+    <tr class="rh">
+      <td colspan="3" class="label">作業場所・範囲</td><td class="label">作業体制：</td><td class="center">${leftTeamCount}</td>
+      <td colspan="3" class="label">作業場所・範囲</td><td class="label">作業体制：</td><td class="center">${rightTeamCount}</td>
+    </tr>
+    ${contentRows}
+    <tr class="rhw">
+      <td class="label" rowspan="${WEEK_LABEL_ROWSPAN}" style="text-align:left; vertical-align:top; white-space:normal; word-break:normal; overflow-wrap:break-word; font-size:9px;">週間予定<br><span style="font-size:7px; font-weight:400;">※木曜日中までに翌週の予定を提出（木曜日の実績報告と合わせてご報告ください）</span></td>
+      <td colspan="2" rowspan="2" class="center">日にち</td>${weekDateCells}
+    </tr>
+    <tr class="rhw">${weekDayCells}</tr>
+    <tr class="rhw"><td class="label" style="border-bottom:1px solid #333;">線路名</td><td class="label" style="font-size:8px; white-space:normal; line-height:1.15; border-bottom:1px solid #333;">これまでの<br>進捗</td>${weekContentCells}</tr>
+    <tr class="rhw"><td style="border-top:none;">${settings.lineName}</td><td class="center" style="border-top:none;">${done}/${total}基</td></tr>
+    <tr class="rhw"><td colspan="9"></td></tr>
+    <tr class="rhw"><td colspan="9"></td></tr>
+    <tr class="rhw"><td colspan="9"></td></tr>
+  `;
+}
+
+function buildEmailText(){
+  const hasWeekly = weeklyTowers.some(a=>a.length>0) || weekDayOff.some(v=>v);
+
+  let body = `${settings.recipientOrg}\n${settings.recipientDept}　${settings.recipientPerson}様\n\n`;
+  body += `添付のPDFの通り、作業日報をご報告いたします。\n`;
+  if(hasWeekly){
+    body += `来週の作業予定も併せてご報告いたします。\n`;
+  }
+  body += `\nよろしくお願いいたします。\n${settings.contractor}　${settings.agentName}`;
+
+  return body;
+}
+function buildSubject(){
+  return `作業日報（週報）＿${$("workDate").value}＿${settings.contractor}`;
+}
+
+let lastPdfBlob = null, lastPdfName = "";
+
+async function makePdfBlob(){
+  const ok = await pdfLibsReady;
+  if(!ok || !window.html2canvas || !window.jspdf){
+    throw new Error("PDFライブラリの読み込みに失敗しました");
+  }
+  const node = $("excelSheet");
+  const canvas = await html2canvas(node, {scale:2, backgroundColor:"#ffffff"});
+  const imgData = canvas.toDataURL("image/png");
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({orientation:"landscape", unit:"pt", format:"a4"});
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+  const imgW = pageW - 40;
+  const imgH = canvas.height * imgW / canvas.width;
+  pdf.addImage(imgData, "PNG", 20, 20, imgW, Math.min(imgH, pageH-40));
+  return pdf.output("blob");
+}
+function downloadBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+  setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 2000);
+}
+
+let previewZoom = 100;
+async function previewPdf(){
+  await saveDraft(false);
+  updatePreviewTable();
+  showToast("プレビューを作成しています…");
+  try{
+    const ok = await pdfLibsReady;
+    if(!ok || !window.html2canvas){
+      showToast("PDFライブラリの読み込みに失敗しました。通信環境をご確認のうえ再読み込みしてください");
+      return;
     }
-    updateSyncNote();
+    const canvas = await html2canvas($("excelSheet"), {scale:2, backgroundColor:"#ffffff"});
+    $("previewImg").src = canvas.toDataURL("image/png");
+    previewZoom = 100;
+    $("previewImg").style.width = "100%";
+    $("zoomLabel").textContent = "100%";
+    $("previewFullModal").style.display = "flex";
+  }catch(e){
+    showToast("プレビューの作成に失敗しました");
   }
+}
+function zoomPreview(delta, reset){
+  previewZoom = reset ? 100 : Math.min(400, Math.max(40, previewZoom + delta));
+  $("previewImg").style.width = previewZoom + "%";
+  $("zoomLabel").textContent = previewZoom + "%";
+}
+function closePreviewFull(){
+  $("previewFullModal").style.display = "none";
+  $("previewImg").src = "";
+}
 
-  function updateSyncNote(){
-    const el = document.getElementById('syncNote');
-    if(!el) return;
-    if(syncMode === 'local'){
-      el.textContent = '最終更新：'+fmtTime(state.updatedAt)+'（この端末に保存・完全オフライン対応）';
-    } else if(syncOk){
-      el.textContent = '最終更新：'+fmtTime(state.updatedAt)+'（全員で共有・保存済み）';
-    } else {
-      el.textContent = '⚠ オフラインのため未保存（電波が入ったら「再同期」を押してください）';
-    }
+async function doGeneratePdf(){
+  updatePreviewTable();
+  showToast("PDFを作成しています…");
+  try{
+    const blob = await makePdfBlob();
+    lastPdfBlob = blob;
+    lastPdfName = `作業日報_${$("workDate").value}.pdf`;
+    showReadyModal();
+  }catch(e){
+    showToast("PDF作成に失敗しました");
   }
+}
 
-  async function resync(){ await saveState(); render(); }
+function showReadyModal(){
+  const dl = $("dlLink");
+  dl.href = URL.createObjectURL(lastPdfBlob);
+  dl.download = lastPdfName;
+  $("readyModal").style.display = "flex";
+}
+function closeReadyModal(){ $("readyModal").style.display = "none"; }
 
-  function fmtTime(iso){
-    if(!iso) return '記録なし';
-    const d = new Date(iso);
-    return d.getMonth()+1+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+// Sharing the blob URL as a plain link (e.g. long-pressing the "PDFを保存" link)
+// makes iOS treat it as a web page/URL, not a file — that's why OneDrive doesn't
+// show up and only "Save to Files"/link-style targets appear. Building an actual
+// File object with the correct application/pdf MIME type and passing it to
+// navigator.share() makes iOS recognize it as a real PDF file, so OneDrive (and
+// other file-handling apps) appear properly in the share sheet.
+async function shareAsFile(){
+  if(!lastPdfBlob) return;
+  if(!navigator.share){
+    showToast("この画面（ファイルを直接開いた状態）では共有機能が使えません。「PDFを保存」をお使いください");
+    return;
   }
-
-  // 「一部施工不可」は号基／区間全体の未完了ではなく、部分的な例外の記録。
-  // フラグが立っている号基／区間は常に「施工完了」として扱う。
-  function isTowerDone(no){ return !!state.towers[no] || !!state.towerBlocked[no]; }
-  function isSegDone(i){ return !!state.segs[i] || !!state.segBlocked[i]; }
-
-  async function toggleTower(no){
-    state.towers[no] = !state.towers[no];
-    render();
-    await saveState();
-  }
-  async function toggleSeg(i){
-    state.segs[i] = !state.segs[i];
-    render();
-    await saveState();
-  }
-  async function toggleHazardTower(no){
-    if(state.towerBlocked[no]){
-      if(!confirm('「一部施工不可」の記録を解除しますか？（完了扱いはそのまま残ります）')) return;
-      delete state.towerBlocked[no];
-      delete state.towerReason[no];
-    } else {
-      const reason = window.prompt('一部施工できない理由を入力してください', '蜂の巣のため一部施工不可');
-      if(reason === null) return;
-      state.towerBlocked[no] = true;
-      state.towerReason[no] = reason || '一部施工不可';
-      state.towers[no] = true;
-    }
-    render();
-    await saveState();
-  }
-  async function toggleHazardSeg(i){
-    if(state.segBlocked[i]){
-      if(!confirm('「一部施工不可」の記録を解除しますか？（完了扱いはそのまま残ります）')) return;
-      delete state.segBlocked[i];
-      delete state.segReason[i];
-    } else {
-      const reason = window.prompt('一部施工できない理由を入力してください', '蜂の巣のため一部施工不可');
-      if(reason === null) return;
-      state.segBlocked[i] = true;
-      state.segReason[i] = reason || '一部施工不可';
-      state.segs[i] = true;
-    }
-    render();
-    await saveState();
-  }
-  async function doReset(){
-    if(!confirm('全ての完了・一部施工不可の記録を消去します。よろしいですか？（この操作は共有データにも反映されます）')) return;
-    state = Object.assign({}, DEFAULT_STATE, {towers:{}, segs:{}, towerBlocked:{}, towerReason:{}, segBlocked:{}, segReason:{}});
-    render();
-    await saveState();
-  }
-
-  function exportData(){
-    window.prompt('この内容をコピーして、他の端末の「取り込み」に貼り付けてください：', JSON.stringify(state));
-  }
-  function importData(){
-    const input = window.prompt('書き出したデータを貼り付けてください：', '');
-    if(!input) return;
+  const file = new File([lastPdfBlob], lastPdfName, { type: "application/pdf" });
+  if(navigator.canShare && navigator.canShare({ files: [file] })){
     try{
-      const incoming = JSON.parse(input);
-      Object.keys(incoming.towers||{}).forEach(k=>{ if(incoming.towers[k]) state.towers[k]=true; });
-      Object.keys(incoming.segs||{}).forEach(k=>{ if(incoming.segs[k]) state.segs[k]=true; });
-      Object.keys(incoming.towerBlocked||{}).forEach(k=>{
-        if(incoming.towerBlocked[k] && !state.towerBlocked[k]){
-          state.towerBlocked[k] = true;
-          state.towerReason[k] = (incoming.towerReason && incoming.towerReason[k]) || '一部施工不可';
-          state.towers[k] = true;
-        }
-      });
-      Object.keys(incoming.segBlocked||{}).forEach(k=>{
-        if(incoming.segBlocked[k] && !state.segBlocked[k]){
-          state.segBlocked[k] = true;
-          state.segReason[k] = (incoming.segReason && incoming.segReason[k]) || '一部施工不可';
-          state.segs[k] = true;
-        }
-      });
-      render();
-      saveState();
+      await navigator.share({ files: [file] });
     }catch(e){
-      alert('データを読み取れませんでした。書き出した内容をそのまま貼り付けてください。');
-    }
-  }
-
-  // ============================================================
-  // 報告一覧表（一部施工不可の箇所のみを抜き出す）
-  // ============================================================
-  function buildReportRows(){
-    const rows = [];
-    towers.forEach(t=>{
-      if(state.towerBlocked[t.no]){
-        rows.push({type:'鉄塔敷地', label:'No.'+t.no, qty:t.area.toLocaleString()+'㎡', reason: state.towerReason[t.no] || '一部施工不可'});
+      if(e && e.name !== "AbortError"){
+        showToast("共有に失敗しました：" + (e && e.message ? e.message : "不明なエラー"));
       }
-    });
-    segments.forEach((g,i)=>{
-      if(g.excluded) return;
-      if(state.segBlocked[i]){
-        rows.push({type:'巡視路', label:fromLabel(i)+' → '+towers[i].no, qty:(g.dist!=null? g.dist.toLocaleString()+'m':'－'), reason: state.segReason[i] || '一部施工不可'});
-      }
-    });
-    return rows;
-  }
-
-  function buildReportText(rows){
-    const lines = [['種別','箇所','数量','一部施工不可の理由'].join('\t')];
-    rows.forEach(r=> lines.push([r.type, r.label, r.qty, r.reason].join('\t')));
-    return lines.join('\n');
-  }
-
-  function buildReportHtmlDoc(rows){
-    const today = new Date();
-    const dateStr = today.getFullYear()+'年'+(today.getMonth()+1)+'月'+today.getDate()+'日';
-    const trs = rows.map(r=>'<tr><td>'+r.type+'</td><td>'+r.label+'</td><td>'+r.qty+'</td><td>'+r.reason+'</td></tr>').join('');
-    return '<!doctype html><html lang="ja"><head><meta charset="utf-8">'
-      + '<title>東山口幹線 草刈工事 一部施工不可箇所 一覧表</title>'
-      + '<style>body{font-family:sans-serif; padding:24px; color:#22302A;} h1{font-size:18px;} '
-      + 'table{border-collapse:collapse; width:100%; margin-top:12px;} th,td{border:1px solid #999; padding:6px 8px; font-size:13px; text-align:left;} '
-      + 'th{background:#eee;} .meta{font-size:12px; color:#555; margin-top:4px; line-height:1.6;} '
-      + '@media print{button{display:none;}}</style></head><body>'
-      + '<h1>東山口幹線　草刈工事　一部施工不可箇所　一覧表</h1>'
-      + '<div class="meta">作成日：'+dateStr+' ／ 該当件数：'+rows.length+'件<br>'
-      + '鉄塔敷地・巡視路とも工事は完了しております。下記箇所のみ、記載の理由により一部区域を施工できなかった旨をご報告いたします。</div>'
-      + '<table><thead><tr><th>種別</th><th>箇所</th><th>数量</th><th>一部施工不可の理由</th></tr></thead><tbody>'
-      + (trs || '<tr><td colspan="4">該当箇所なし（全箇所、支障なく施工完了しております）</td></tr>')
-      + '</tbody></table>'
-      + '<p style="margin-top:20px;"><button onclick="window.print()" style="padding:8px 16px; font-size:13px;">印刷 / PDF保存</button></p>'
-      + '</body></html>';
-  }
-
-  function copyReportText(){
-    window.prompt('この内容をコピーして、メールやメッセージに貼り付けてください：', buildReportText(buildReportRows()));
-  }
-  function openReportTab(){
-    const blob = new Blob([buildReportHtmlDoc(buildReportRows())], {type:'text/html'});
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
-  }
-  function downloadReportHtml(){
-    const blob = new Blob([buildReportHtmlDoc(buildReportRows())], {type:'text/html'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const today = new Date();
-    const ymd = today.getFullYear()+String(today.getMonth()+1).padStart(2,'0')+String(today.getDate()).padStart(2,'0');
-    a.href = url;
-    a.download = '東山口幹線_一部施工不可報告_'+ymd+'.html';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(()=>URL.revokeObjectURL(url), 5000);
-  }
-
-  // ============================================================
-  // 描画
-  // ============================================================
-  function render(){
-    const towerDoneCount = towers.filter(t=>isTowerDone(t.no)).length;
-    const towerDoneArea = towers.filter(t=>isTowerDone(t.no)).reduce((s,t)=>s+t.area,0);
-    const towerBlockedCount = towers.filter(t=>state.towerBlocked[t.no]).length;
-
-    let segDoneCount = 0, segDoneDist = 0, segBlockedCount = 0;
-    segments.forEach((g,i)=>{
-      if(g.excluded) return;
-      if(isSegDone(i)){ segDoneCount++; segDoneDist += (g.dist||0); }
-      if(state.segBlocked[i]) segBlockedCount++;
-    });
-
-    const totalDone = towerDoneCount + segDoneCount;
-    const totalBlocked = towerBlockedCount + segBlockedCount;
-    const totalItems = N + SEG_TOTAL;
-    const pct = (a,b)=> b===0 ? 0 : Math.round(a/b*100);
-
-    const headerHtml = `<header class="top">
-      <a class="map-link" href="${MAP_URL}" target="_blank" rel="noopener">🗺️ 現場地図を開く</a>
-      <div class="line-name">東山口幹線</div>
-      <h1>草刈チェックリスト</h1>
-      <div class="sub">鉄塔敷地 ${N}基 ・ 巡視路 ${SEG_TOTAL}区間　全${totalItems}件中 <b>${totalDone}</b>件完了（${pct(totalDone,totalItems)}%）${totalBlocked>0 ? ' <span class="warn-chip">⚠ 一部施工不可 '+totalBlocked+'件</span>' : ''}</div>
-
-      <div class="stats">
-        <div class="stat">
-          <div class="lbl">鉄塔（基）</div>
-          <div class="val">${towerDoneCount}/${N}</div>
-          <div class="pct">${pct(towerDoneCount,N)}%</div>
-          <div class="bar"><div style="width:${pct(towerDoneCount,N)}%"></div></div>
-        </div>
-        <div class="stat">
-          <div class="lbl">敷地面積(㎡)</div>
-          <div class="val">${towerDoneArea.toLocaleString()}</div>
-          <div class="pct">/ ${TOTAL_TOWER_AREA.toLocaleString()}</div>
-          <div class="bar"><div style="width:${pct(towerDoneArea,TOTAL_TOWER_AREA)}%"></div></div>
-        </div>
-        <div class="stat">
-          <div class="lbl">巡視路(m)</div>
-          <div class="val">${segDoneDist.toLocaleString()}</div>
-          <div class="pct">/ ${TOTAL_DIST.toLocaleString()}</div>
-          <div class="bar"><div style="width:${pct(segDoneDist,TOTAL_DIST)}%"></div></div>
-        </div>
-      </div>
-
-      <div class="rail-wrap">
-        <div class="rail-lbl">ルート進捗（タップで移動）</div>
-        <div class="rail" id="rail"></div>
-      </div>
-
-      <div class="controls">
-        <div class="seg-filter" id="filterGroup">
-          <button data-f="all" class="${filter==='all'?'active':''}">すべて</button>
-          <button data-f="pending" class="${filter==='pending'?'active':''}">未完了</button>
-          <button data-f="done" class="${filter==='done'?'active':''}">完了</button>
-          <button data-f="blocked" class="${filter==='blocked'?'active':''}">一部あり</button>
-        </div>
-        <div class="jump"><input id="jumpInput" type="text" inputmode="numeric" placeholder="No.で検索 例:127"></div>
-      </div>
-    </header>`;
-
-    const footerHtml = `<div class="report-panel">
-      <div class="report-title">📋 施主向け報告一覧表</div>
-      <div class="report-desc">「一部あり」に記録した箇所（現在 <b>${totalBlocked}</b>件）だけをまとめた一覧表を自動作成します。鉄塔・巡視路自体は施工完了として扱われるので、この一覧表は「一部施工できなかった箇所とその理由」だけを報告するためのものです。</div>
-      <div class="report-btns">
-        <button class="report-btn primary" id="reportOpenBtn">開く（新しいタブ）</button>
-        <button class="report-btn" id="reportDownloadBtn">保存（HTML）</button>
-        <button class="report-btn" id="reportCopyBtn">コピー（テキスト）</button>
-      </div>
-      <div class="report-note">「開く」で今すぐ確認・印刷・PDF保存ができます。同じ端末・同じブラウザを開いている間だけ有効な一時リンクのため、他の人に送る場合は「保存」でファイルにしてから送ってください。</div>
-    </div>
-
-    <div class="footnote">
-      <b>注記</b><br>
-      ・「太陽光連絡」区間・敷地：太陽光発電所敷地内のため、中国電力ネットワーク(株)が施主と協議のうえ草刈期間・箇所を確定するまで立入禁止。<br>
-      ・No.12〜126間は林道溝掃除を含む（この区間は車両通行禁止）。<br>
-      ・No.13〜125は本工事の対象外のため番号が欠番。<br>
-      ・トラス〜No.1〜2間は施工自体がないためチェック対象から除外。<br>
-      ・⚠ボタンは、蜂の巣など安全上の理由で一部の区域だけ施工できなかった場合の記録用です。全体不可ではないため、記録すると自動的にその号基／区間は「完了」として扱われます。<br>
-      ${syncMode==='local' ? '・この画面はこの端末に保存されます（オフライン専用・他端末とは共有されません）。「書き出し／取り込み」で他端末の記録と手動で統合できます。' : '・通常はこの端末がオンラインの間、全員の進捗が自動で共有されます。電波が届かない現場ではオフラインのまま操作でき、電波が入った時に「再同期」で反映されます。'}
-    </div>
-
-    <div class="bottom-bar">
-      <div class="sync-note" id="syncNote">最終更新：${fmtTime(state.updatedAt)}</div>
-      <div style="display:flex; gap:6px; flex-wrap:wrap;">
-        ${syncMode==='cloud' && !syncOk ? '<button class="reset-btn" id="resyncBtn">再同期</button>' : ''}
-        <button class="reset-btn" id="exportBtn">書き出し</button>
-        <button class="reset-btn" id="importBtn">取り込み</button>
-        <button class="reset-btn" id="resetBtn">記録をリセット</button>
-      </div>
-    </div>`;
-
-    const app = document.getElementById('app');
-    app.innerHTML = headerHtml + '<main id="mainList"></main>' + footerHtml;
-
-    // ---- ルート進捗レール ----
-    const rail = document.getElementById('rail');
-    let railHtml = '';
-    for(let i=0;i<N;i++){
-      const seg = segments[i];
-      const edgeCls = seg.excluded ? 'na' : ((isSegDone(i)?'done ':'') + (state.segBlocked[i]?'blocked':''));
-      railHtml += '<div class="rail-edge '+edgeCls+'"></div>';
-      const tno = towers[i].no;
-      const nodeCls = (isTowerDone(tno)?'done ':'') + (state.towerBlocked[tno]?'blocked':'');
-      railHtml += '<div class="rail-node '+nodeCls+'" data-jump="'+tno+'"></div>';
+      /* AbortError = user cancelled the share sheet, nothing to show */
     }
-    rail.innerHTML = railHtml;
-    rail.querySelectorAll('.rail-node').forEach(el=>{
-      el.addEventListener('click', ()=> jumpTo(el.getAttribute('data-jump')));
-    });
-
-    // ---- メインリスト（トラス〜1〜2〜…〜170 の実経路順） ----
-    const main = document.getElementById('mainList');
-    let listHtml = '';
-    for(let i=0;i<N;i++){
-      const seg = segments[i];
-      if(seg.excluded){
-        listHtml += '<div class="seg-row">'
-          + '<div class="connector"><div class="stem"></div></div>'
-          + '<div class="seg-info" style="opacity:.6;">'+fromLabel(i)+' → '+towers[i].no+'　対象外（施工なし）</div>'
-          + '</div>';
-      } else {
-        const segDone = isSegDone(i);
-        const segBlocked = !!state.segBlocked[i];
-        const fromNo = i>0 ? towers[i-1].no : null;
-        const toNo = towers[i].no;
-        const fromGeo = fromNo ? TOWER_GEO[fromNo] : null;
-        const toGeo = TOWER_GEO[toNo];
-        const segHidden = filter !== 'all' && !(
-          (filter === 'pending' && !segDone) ||
-          (filter === 'done' && segDone) ||
-          (filter === 'blocked' && segBlocked)
-        );
-        listHtml += '<div class="seg-row '+(segHidden?'hide':'')+'">'
-          + '<div class="connector"><div class="stem"></div></div>'
-          + '<div class="seg-check '+(segDone?'done':'')+' '+(segBlocked?'blocked':'')+'" data-seg="'+i+'"></div>'
-          + '<div class="seg-info" style="flex:1;">'
-          + '<b>'+fromLabel(i)+' → '+towers[i].no+'</b>　'
-          + (seg.dist!=null ? seg.dist.toLocaleString()+'m（密'+seg.dense.toLocaleString()+'/疎'+seg.sparse.toLocaleString()+'）' : '距離未測定（協議事項）')
-          + (seg.clean ? '　清掃'+seg.clean.toLocaleString()+'㎡' : '')
-          + (seg.note ? ' <span class="seg-note">'+seg.note+'</span>' : '')
-          + (segBlocked ? '<span class="blocked-reason">⚠ '+(state.segReason[i]||'一部施工不可')+'</span>' : '')
-          + (fromGeo && toGeo ? ' <a class="seg-nav" href="https://www.google.com/maps/dir/?api=1&origin='+fromGeo.lat+','+fromGeo.lon+'&destination='+toGeo.lat+','+toGeo.lon+'&travelmode=walking" target="_blank" rel="noopener">🚶この区間へ</a>' : '')
-          + '</div>'
-          + '<div class="hazard-btn '+(segBlocked?'active':'')+'" data-hazard-seg="'+i+'" title="一部施工不可を記録">⚠</div>'
-          + '</div>';
-      }
-
-      const t = towers[i];
-      const tDone = isTowerDone(t.no);
-      const tBlocked = !!state.towerBlocked[t.no];
-      const geo = TOWER_GEO[t.no];
-      const isDanger = geo && /危険/.test(geo.note);
-      const tHidden = filter !== 'all' && !(
-        (filter === 'pending' && !tDone) ||
-        (filter === 'done' && tDone) ||
-        (filter === 'blocked' && tBlocked)
-      );
-      listHtml += '<div class="tower-row '+(tHidden?'hide':'')+'" id="tower-'+t.no+'">'
-        + '<div style="display:flex;">'
-        + '<div class="connector"><div class="dot"></div></div>'
-        + '<div class="tower-card '+(tDone?'done':'')+' '+(tBlocked?'blocked':'')+'">'
-        + '<div class="tower-check '+(tDone?'done':'')+' '+(tBlocked?'blocked':'')+'" data-tower="'+t.no+'"></div>'
-        + '<div class="tower-body">'
-        + '<div class="tower-top">'
-        + '<span class="tower-no">No.'+t.no+'</span>'
-        + '<span class="tower-area">敷地草刈 <b>'+t.area.toLocaleString()+'</b>㎡</span>'
-        + (t.note ? '<span class="tower-note">'+t.note+'</span>' : '')
-        + '</div>'
-        + (geo ? '<span class="field-note '+(isDanger?'danger':'')+'">'+(isDanger?'⚠ ':'')+geo.note+'</span>' : '')
-        + (tBlocked ? '<span class="blocked-reason">⚠ '+(state.towerReason[t.no]||'一部施工不可')+'</span>' : '')
-        + '</div>'
-        + (geo ? '<a class="nav-btn" href="https://www.google.com/maps/dir/?api=1&destination='+geo.lat+','+geo.lon+'" target="_blank" rel="noopener">📍ナビ開始</a>' : '')
-        + '<div class="hazard-btn '+(tBlocked?'active':'')+'" data-hazard-tower="'+t.no+'" title="一部施工不可を記録">⚠</div>'
-        + '</div></div></div>';
-    }
-    main.innerHTML = listHtml;
-
-    // ---- イベント登録 ----
-    main.querySelectorAll('.seg-check').forEach(el=>{
-      el.addEventListener('click', ()=> toggleSeg(parseInt(el.getAttribute('data-seg'), 10)));
-    });
-    main.querySelectorAll('.tower-check').forEach(el=>{
-      el.addEventListener('click', ()=> toggleTower(el.getAttribute('data-tower')));
-    });
-    main.querySelectorAll('[data-hazard-seg]').forEach(el=>{
-      el.addEventListener('click', ()=> toggleHazardSeg(parseInt(el.getAttribute('data-hazard-seg'), 10)));
-    });
-    main.querySelectorAll('[data-hazard-tower]').forEach(el=>{
-      el.addEventListener('click', ()=> toggleHazardTower(el.getAttribute('data-hazard-tower')));
-    });
-    const filterGroup = document.getElementById('filterGroup');
-    if(filterGroup){
-      filterGroup.querySelectorAll('button').forEach(el=>{
-        el.addEventListener('click', ()=>{ filter = el.getAttribute('data-f'); render(); });
-      });
-    }
-    const resetBtn = document.getElementById('resetBtn');
-    if(resetBtn) resetBtn.addEventListener('click', doReset);
-    const exportBtn = document.getElementById('exportBtn');
-    if(exportBtn) exportBtn.addEventListener('click', exportData);
-    const importBtn = document.getElementById('importBtn');
-    if(importBtn) importBtn.addEventListener('click', importData);
-    const resyncBtn = document.getElementById('resyncBtn');
-    if(resyncBtn) resyncBtn.addEventListener('click', resync);
-    const reportOpenBtn = document.getElementById('reportOpenBtn');
-    if(reportOpenBtn) reportOpenBtn.addEventListener('click', openReportTab);
-    const reportDownloadBtn = document.getElementById('reportDownloadBtn');
-    if(reportDownloadBtn) reportDownloadBtn.addEventListener('click', downloadReportHtml);
-    const reportCopyBtn = document.getElementById('reportCopyBtn');
-    if(reportCopyBtn) reportCopyBtn.addEventListener('click', copyReportText);
-    const jumpInput = document.getElementById('jumpInput');
-    if(jumpInput){
-      jumpInput.addEventListener('keydown', (e)=>{
-        if(e.key === 'Enter'){ jumpTo(jumpInput.value.trim()); }
-      });
-    }
+  } else {
+    showToast("この端末ではファイル共有に対応していません。「PDFを保存」からダウンロードしてください");
   }
-
-  function jumpTo(no){
-    const el = document.getElementById('tower-'+no);
-    if(el){
-      el.scrollIntoView({behavior:'smooth', block:'center'});
-      el.style.outline = '2px solid var(--rust)';
-      setTimeout(()=>{ el.style.outline = ''; }, 1200);
-    }
+}
+function copyToClipboard(text, msg){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(
+      () => showToast(msg),
+      () => showToast("コピーに失敗しました")
+    );
+  } else {
+    showToast("この端末ではコピー機能が使えません");
   }
+}
+function copyRecipient(){
+  copyToClipboard(settings.recipientEmail, "宛先をコピーしました");
+}
+function copySubjectText(){
+  copyToClipboard(buildSubject(), "件名をコピーしました");
+}
+function copyBodyText(){
+  copyToClipboard(buildEmailText(), "文章をコピーしました");
+}
 
-  // ============================================================
-  // 初期化：読み込みに失敗・タイムアウトしても必ず画面を表示する
-  // ============================================================
-  (async function init(){
-    try{
-      await loadState();
-    }catch(e){
-      console.error('loadState failed:', e);
-      syncOk = false;
-    }finally{
-      render();
+async function startSend(){
+  await saveDraft(false);
+  const issues = validateIssues();
+  if(issues.length){
+    $("warningList").innerHTML = issues.map(t=>`<li><a href="javascript:void(0)" onclick="jumpToField('${t.target}')" style="color:var(--safety-dark); text-decoration:underline; font-weight:700;">${t.text}</a></li>`).join("");
+    $("warningModal").style.display = "flex";
+    return;
+  }
+  await doGeneratePdf();
+}
+function closeWarningModal(){ $("warningModal").style.display = "none"; }
+async function proceedAnyway(){
+  closeWarningModal();
+  await doGeneratePdf();
+}
+
+function openSettings(){
+  $("setProjectName").value = settings.projectName;
+  $("setLineName").value = settings.lineName;
+  $("setContractor").value = settings.contractor;
+  $("setAgentName").value = settings.agentName;
+  $("setAgentPhone").value = settings.agentPhone;
+  $("setCompanyPhone").value = settings.companyPhone;
+  $("setCompanyFax").value = settings.companyFax;
+  $("setSenderEmail").value = settings.senderEmail;
+  $("setRecipientEmail").value = settings.recipientEmail;
+  $("setRecipientOrg").value = settings.recipientOrg;
+  $("setRecipientDept").value = settings.recipientDept;
+  $("setRecipientPerson").value = settings.recipientPerson;
+  $("setRecipientTel").value = settings.recipientTel;
+  $("setRecipientFax").value = settings.recipientFax;
+  $("setFixedLeader").value = settings.fixedLeader;
+  $("setTowerRangeSpec").value = settings.towerRangeSpec;
+  $("settingsModal").style.display = "flex";
+}
+function closeSettings(){ $("settingsModal").style.display = "none"; }
+async function saveSettingsForm(){
+  settings.projectName = $("setProjectName").value;
+  settings.lineName = $("setLineName").value;
+  settings.contractor = $("setContractor").value;
+  settings.agentName = $("setAgentName").value;
+  settings.agentPhone = $("setAgentPhone").value;
+  settings.companyPhone = $("setCompanyPhone").value;
+  settings.companyFax = $("setCompanyFax").value;
+  settings.senderEmail = $("setSenderEmail").value;
+  settings.recipientEmail = $("setRecipientEmail").value;
+  settings.recipientOrg = $("setRecipientOrg").value;
+  settings.recipientDept = $("setRecipientDept").value;
+  settings.recipientPerson = $("setRecipientPerson").value;
+  settings.recipientTel = $("setRecipientTel").value;
+  settings.recipientFax = $("setRecipientFax").value;
+  settings.fixedLeader = $("setFixedLeader").value;
+  settings.towerRangeSpec = $("setTowerRangeSpec").value || "1-12,126-170";
+  await saveSettings();
+  renderAll();
+  closeSettings();
+  showToast("設定を更新しました");
+}
+
+(function checkSandbox(){
+  try{
+    if(window.self !== window.top){
+      $("sandboxBanner").innerHTML = `<div class="banner"><div>📱</div><div>
+        <b>この画面はプレビュー表示です。</b>PDFの保存やGmail連携がうまく動かない場合は、
+        このページ自体をブラウザで直接開いてください（Claudeの共有・ダウンロードメニューからこのファイルを保存し、
+        ファイルを開いてSafari／Chromeなどのブラウザで表示すると、保存・共有が正しく動作します）。
+      </div></div>`;
+      return;
     }
-  })();
-
+  }catch(e){
+    $("sandboxBanner").innerHTML = `<div class="banner"><div>📱</div><div>
+      <b>この画面はプレビュー表示です。</b>PDFの保存やGmail連携がうまく動かない場合は、
+      このファイルをブラウザで直接開いてご利用ください。
+    </div></div>`;
+    return;
+  }
+  if(location.protocol === "file:"){
+    $("sandboxBanner").innerHTML = `<div class="banner"><div>📤</div><div>
+      <b>「共有する」ボタンについて：</b>ファイルを直接開いた状態（file://）では、
+      スマホの「共有」機能（OneDriveなどへの保存）が動かないことがあります。
+      その場合は「📥 PDFを保存」でダウンロードしたPDFを、OneDriveアプリの「アップロード」機能から
+      手動で追加してください。Netlifyなどでこのアプリ自体をWeb公開すると、「共有する」ボタンも
+      正常に動くようになります。
+    </div></div>`;
+  }
 })();
+loadAll();
 </script>
+
+<!-- PDF準備完了モーダル -->
+<div id="readyModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this) closeReadyModal()">
+  <div class="modal">
+    <button class="close" onclick="closeReadyModal()">×</button>
+    <h3>PDFの準備ができました</h3>
+    <div class="modal-actions">
+      <button class="link-btn share" onclick="shareAsFile()">📤 共有する（OneDriveなどに保存）</button>
+      <a id="dlLink" class="link-btn dl" href="#" download="">📥 PDFを保存（ダウンロード）</a>
+      <button class="link-btn mailapp" onclick="copyRecipient()">📋 あて先をコピー</button>
+      <button class="link-btn gmail" onclick="copySubjectText()">📋 件名をコピー</button>
+      <button class="link-btn gmail" onclick="copyBodyText()">📋 文章をコピー</button>
+    </div>
+    <div class="hint" style="margin-top:10px;">
+      OneDriveに保存したい場合は「📤 共有する」を使ってください（共有シートにOneDriveが表示されます）。メールに添付する場合は「📥 PDFを保存」でダウンロードし、メールアプリを開いて、あて先・件名・文章をそれぞれ貼り付け、PDFを手動で添付してから、内容を確認のうえご自身で送信してください。
+    </div>
+  </div>
+</div>
+
+<!-- 警告モーダル -->
+<div id="warningModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this) closeWarningModal()">
+  <div class="modal">
+    <button class="close" onclick="closeWarningModal()">×</button>
+    <h3>⚠️ 入力の確認</h3>
+    <div class="hint">送信前に、以下の項目をご確認ください。</div>
+    <ul id="warningList" style="margin:12px 0; padding-left:20px; font-size:13px; line-height:1.8; color:var(--safety-dark);"></ul>
+    <div class="modal-actions">
+      <button class="link-btn dl" onclick="closeWarningModal()">戻って修正する</button>
+      <button class="link-btn share" onclick="proceedAnyway()">このまま作成する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 送信モーダル -->
+<!-- 設定モーダル -->
+<div id="settingsModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this) closeSettings()">
+  <div class="modal">
+    <button class="close" onclick="closeSettings()">×</button>
+    <h3>送信情報・現場情報の設定</h3>
+    <label>件名（工事名）</label><input type="text" id="setProjectName">
+    <label>線路名</label><input type="text" id="setLineName">
+    <label>工事請負者名</label><input type="text" id="setContractor">
+    <div class="row2">
+      <div><label>現場代理人名</label><input type="text" id="setAgentName"></div>
+      <div><label>現場代理人携帯</label><input type="text" id="setAgentPhone"></div>
+    </div>
+    <div class="row2">
+      <div><label>会社電話</label><input type="text" id="setCompanyPhone"></div>
+      <div><label>会社FAX</label><input type="text" id="setCompanyFax"></div>
+    </div>
+    <label>作業班長（固定）</label><input type="text" id="setFixedLeader">
+    <label>有効な鉄塔番号（範囲指定・欠番を除く）</label>
+    <input type="text" id="setTowerRangeSpec" placeholder="例：1-12,126-170">
+    <div class="hint">カンマ区切りで範囲を指定します。「1-12,126-170」は№1〜12と№126〜170のみが対象で、合計57基になります（№13〜125は欠番として自動的に除外されます）。</div>
+    <label>送信元メールアドレス（あなた）</label><input type="text" id="setSenderEmail">
+    <label>送信先メールアドレス（施主）</label><input type="text" id="setRecipientEmail">
+    <div class="row2">
+      <div><label>送信先　会社名</label><input type="text" id="setRecipientOrg"></div>
+      <div><label>送信先　部署名</label><input type="text" id="setRecipientDept"></div>
+    </div>
+    <label>担当者名（様、を除く）</label><input type="text" id="setRecipientPerson">
+    <div class="row2">
+      <div><label>送信先　TEL</label><input type="text" id="setRecipientTel"></div>
+      <div><label>送信先　FAX</label><input type="text" id="setRecipientFax"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="link-btn mailapp" onclick="saveSettingsForm()">保存する</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
