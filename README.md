@@ -1,1 +1,1 @@
-# kusakari-checklist
+# kusakarinippou
